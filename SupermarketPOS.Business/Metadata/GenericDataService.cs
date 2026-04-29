@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using SupermarketPOS.Business.Workflow;
 using SupermarketPOS.Core.Metadata;
 using SupermarketPOS.Data;
 using System;
@@ -68,6 +69,7 @@ namespace SupermarketPOS.Business.Metadata
         private readonly AuditService _auditService;
         private readonly FieldPermissionService _fieldPermissions;
         private readonly IActionHandler[] _actionHandlers;
+        private WorkflowEngine _workflowEngine;
 
         // Local metadata cache — avoids repeated registry lookups per entity
         private readonly ConcurrentDictionary<string, ResolvedMetadata> _cache =
@@ -107,6 +109,31 @@ namespace SupermarketPOS.Business.Metadata
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
             _fieldPermissions = fieldPermissions ?? throw new ArgumentNullException(nameof(fieldPermissions));
             _actionHandlers = actionHandlers?.ToArray() ?? Array.Empty<IActionHandler>();
+        }
+
+        /// <summary>
+        /// Phase 4: Inject the workflow engine after construction (avoids circular dependency).
+        /// </summary>
+        public void SetWorkflowEngine(WorkflowEngine engine)
+        {
+            _workflowEngine = engine;
+        }
+
+        private async Task TriggerWorkflowsAsync(string entityName, string trigger, int? entityId, Dictionary<string, object> data)
+        {
+            if (_workflowEngine == null) return;
+            try
+            {
+                await _workflowEngine.ExecuteAsync(entityName, trigger, entityId, data).ConfigureAwait(false);
+            }
+            catch (ValidationException)
+            {
+                throw; // Block actions must propagate
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"[GenericData] Workflow execution failed for {trigger} on {entityName}: {ex.Message}");
+            }
         }
 
         // ================================================================
@@ -334,6 +361,9 @@ namespace SupermarketPOS.Business.Metadata
             // Step 7: Publish domain event
             PublishDomainEvent("MetadataEntityCreated", entityName, newId, data);
 
+            // Phase 4: Trigger OnCreate workflows
+            await TriggerWorkflowsAsync(entityName, "OnCreate", newId, data).ConfigureAwait(false);
+
             Logger.Debug($"[GenericData] CREATE {meta.Entity.Name}: Id={newId}");
             return newId;
         }
@@ -410,6 +440,9 @@ namespace SupermarketPOS.Business.Metadata
             // Step 7: Publish domain event
             PublishDomainEvent("MetadataEntityUpdated", entityName, id, data);
 
+            // Phase 4: Trigger OnUpdate workflows
+            await TriggerWorkflowsAsync(entityName, "OnUpdate", id, data).ConfigureAwait(false);
+
             Logger.Debug($"[GenericData] UPDATE {meta.Entity.Name} Id={id}: {rowsAffected} row(s)");
             return rowsAffected;
         }
@@ -466,6 +499,9 @@ namespace SupermarketPOS.Business.Metadata
             // Step 7: Publish domain event
             PublishDomainEvent("MetadataEntityDeleted", entityName, id, oldValues);
 
+            // Phase 4: Trigger OnDelete workflows
+            await TriggerWorkflowsAsync(entityName, "OnDelete", id, oldValues as Dictionary<string, object>).ConfigureAwait(false);
+
             Logger.Debug($"[GenericData] DELETE {meta.Entity.Name} Id={id}: done");
             return rowsAffected;
         }
@@ -506,21 +542,25 @@ namespace SupermarketPOS.Business.Metadata
             var handler = _actionHandlers.FirstOrDefault(h =>
                 h.CanHandle(entityName, action.Type));
 
+            object result;
+
             if (handler != null)
             {
                 Logger.Debug($"[GenericData] ACTION {entityName}.{actionName}: " +
                             $"using handler {handler.GetType().Name}");
 
-                return await ExecuteInTransactionAsync(async svc =>
+                result = await ExecuteInTransactionAsync(async svc =>
                 {
                     return await handler.HandleAsync(
                         entityName, action, data ?? new Dictionary<string, object>(),
                         svc, CancellationToken.None).ConfigureAwait(false);
                 }).ConfigureAwait(false);
             }
+            else
+            {
 
             // Built-in dispatch based on action type — all inside a transaction
-            return await ExecuteInTransactionAsync(async svc =>
+            result = await ExecuteInTransactionAsync(async svc =>
             {
                 switch (action.Type?.ToLowerInvariant())
                 {
@@ -573,6 +613,15 @@ namespace SupermarketPOS.Business.Metadata
                             $"Unknown action type '{action.Type}' for action '{actionName}'.");
                 }
             }).ConfigureAwait(false);
+            }
+
+            // Phase 4: Trigger OnAction workflows
+            int? actionEntityId = null;
+            if (data != null && data.TryGetValue("Id", out var actionIdVal) && actionIdVal != null)
+                actionEntityId = Convert.ToInt32(actionIdVal);
+            await TriggerWorkflowsAsync(entityName, "OnAction", actionEntityId, data).ConfigureAwait(false);
+
+            return result;
         }
 
         // ================================================================
