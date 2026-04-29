@@ -1,0 +1,36 @@
+<UserControl x:Class="SupermarketPOS.UI.Controls.Dynamic.DynamicEntityPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:SupermarketPOS.UI.Controls.Dynamic">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition x:Name="FormRow" Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Notification Toast Bar (non-blocking, replaces MessageBox) -->
+        <Border x:Name="NotificationBar" Grid.Row="0" Visibility="Collapsed"
+                Padding="12,8" Margin="0,0,0,8" CornerRadius="6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="NotificationText" Grid.Column="0" FontSize="13"
+                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+                <Button x:Name="DismissNotificationBtn" Grid.Column="1" Content="✕"
+                        Width="24" Height="24" Background="Transparent" BorderThickness="0"
+                        Cursor="Hand" FontSize="12" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Grid view (always visible) -->
+        <local:DynamicGrid x:Name="EntityGrid" Grid.Row="1"/>
+
+        <!-- Form panel (slides in when editing) -->
+        <Border x:Name="FormPanel" Grid.Row="2" Visibility="Collapsed">
+            <local:DynamicForm x:Name="EntityForm"/>
+        </Border>
+    </Grid>
+</UserControl>

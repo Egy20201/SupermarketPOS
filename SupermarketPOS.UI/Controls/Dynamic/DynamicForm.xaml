@@ -1,0 +1,77 @@
+<UserControl x:Class="SupermarketPOS.UI.Controls.Dynamic.DynamicForm"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Border Style="{DynamicResource CardBorderStyle}" Padding="20" Margin="0,0,0,16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="FormTitle" Grid.Column="0" FontSize="18" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+
+                <Button x:Name="CloseFormButton" Grid.Column="1" Content="✕" 
+                        Width="32" Height="32" Background="Transparent" 
+                        BorderThickness="0" Cursor="Hand" FontSize="16"
+                        Foreground="{DynamicResource TextSecondaryBrush}"/>
+            </Grid>
+
+            <!-- Inline Confirmation Banner (non-blocking, replaces MessageBox) -->
+            <Border x:Name="ConfirmBanner" Grid.Row="1" Visibility="Collapsed"
+                    Background="#FEF3C7" BorderBrush="#F59E0B" BorderThickness="1"
+                    CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="ConfirmText" Grid.Column="0" FontSize="13"
+                               Foreground="#92400E" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <Button x:Name="ConfirmYesBtn" Grid.Column="1" Content="نعم"
+                            Width="60" Height="28" Margin="8,0,4,0"
+                            Background="#F59E0B" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                    <Button x:Name="ConfirmNoBtn" Grid.Column="2" Content="لا"
+                            Width="60" Height="28"
+                            Background="#6B7280" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                </Grid>
+            </Border>
+
+            <!-- Fields Container (scrollable) -->
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" 
+                          MaxHeight="500" Padding="0,0,8,0">
+                <StackPanel x:Name="FieldsContainer"/>
+            </ScrollViewer>
+
+            <!-- Action Buttons -->
+            <Grid Grid.Row="3" Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="ValidationText" Grid.Column="0" FontSize="12"
+                           Foreground="#EF4444" VerticalAlignment="Center" TextWrapping="Wrap"/>
+
+                <Button x:Name="SaveButton" Grid.Column="1" Content="حفظ"
+                        Style="{DynamicResource SuccessButtonStyle}" Width="100" 
+                        Margin="0,0,8,0" Height="36"/>
+
+                <Button x:Name="CancelButton" Grid.Column="2" Content="إلغاء"
+                        Style="{DynamicResource SecondaryButtonStyle}" Width="100" Height="36"/>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

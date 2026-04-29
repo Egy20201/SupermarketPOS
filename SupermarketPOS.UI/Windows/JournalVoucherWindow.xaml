@@ -1,0 +1,85 @@
+﻿<local:BaseWindow x:Class="SupermarketPOS.UI.JournalVoucherWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                  xmlns:local="clr-namespace:SupermarketPOS.UI"
+                  Title="دفتر اليومية"
+                  WindowState="Maximized"
+                  WindowStyle="None"
+                  FlowDirection="RightToLeft"
+                  Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="MainGrid" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource HeaderBorderStyle}" Margin="0,0,0,16">
+            <Grid>
+                <TextBlock Text="📒 دفتر اليومية" FontSize="24" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                <Button Content="✕" Width="40" Height="40" Style="{StaticResource IconButtonStyle}" Foreground="White" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <WrapPanel>
+                <TextBlock Text="رقم القيد:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox x:Name="VoucherNumberBox" Width="150" IsReadOnly="True" Background="{DynamicResource InputDisabledBrush}" Margin="0,0,24,0"/>
+                <TextBlock Text="التاريخ:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <DatePicker x:Name="DatePicker" Width="150" SelectedDate="{x:Static sys:DateTime.Today}" Margin="0,0,24,0"/>
+                <TextBlock Text="البيان:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox x:Name="DescriptionBox" Width="400"/>
+            </WrapPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="➕ إضافة سطر" Style="{StaticResource PrimaryButtonStyle}" Width="120" Click="AddLine_Click"/>
+                <Button Content="🧾 قيد جديد" Style="{StaticResource SecondaryButtonStyle}" Width="120" Margin="8,0,0,0" Click="ClearButton_Click"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16" Padding="0">
+            <DataGrid x:Name="LinesGrid" AutoGenerateColumns="False" CanUserAddRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="كود الحساب" Binding="{Binding AccountCode}" Width="120"/>
+                    <DataGridTextColumn Header="اسم الحساب" Binding="{Binding AccountName}" Width="250"/>
+                    <DataGridTextColumn Header="مدين" Binding="{Binding Debit, StringFormat={}{0:N2}}" Width="120"/>
+                    <DataGridTextColumn Header="دائن" Binding="{Binding Credit, StringFormat={}{0:N2}}" Width="120"/>
+                    <DataGridTextColumn Header="ملاحظات" Binding="{Binding Notes}" Width="200"/>
+                    <DataGridTemplateColumn Header="" Width="50">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="🗑️" Style="{StaticResource IconButtonStyle}" Click="DeleteLine_Click"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Border Grid.Row="4" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock x:Name="TotalDebitText" FontSize="16" FontWeight="Bold" Margin="0,0,30,0"/>
+                <TextBlock x:Name="TotalCreditText" FontSize="16" FontWeight="Bold" Margin="0,0,30,0"/>
+                <TextBlock x:Name="DifferenceText" FontSize="16" FontWeight="Bold"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="5" Style="{StaticResource CardBorderStyle}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="❌ إلغاء" Style="{StaticResource SecondaryButtonStyle}" Width="110" Click="CloseButton_Click"/>
+                <Button Content="💾 حفظ القيد" Style="{StaticResource SuccessButtonStyle}" Width="130" Margin="8,0,0,0" Click="SaveButton_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</local:BaseWindow>

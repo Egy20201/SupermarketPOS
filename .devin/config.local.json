@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Exec(dotnet build)",
+      "Exec(rm)",
+      "Exec(\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe\")",
+      "Exec(\"/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/MSBuild/Current/Bin/MSBuild.exe\")",
+      "Exec(taskkill)",
+      "Exec(grep)",
+      "Exec(mkdir)",
+      "Exec(find)",
+      "Exec(ls)"
+    ]
+  }
+}

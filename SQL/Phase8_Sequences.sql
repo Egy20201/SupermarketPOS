@@ -1,0 +1,5 @@
+IF NOT EXISTS (SELECT 1 FROM sys.sequences WHERE name = 'LeadSeq')
+    CREATE SEQUENCE dbo.LeadSeq START WITH 1 INCREMENT BY 1 NO CYCLE;
+
+IF NOT EXISTS (SELECT 1 FROM sys.sequences WHERE name = 'OpportunitySeq')
+    CREATE SEQUENCE dbo.OpportunitySeq START WITH 1 INCREMENT BY 1 NO CYCLE;

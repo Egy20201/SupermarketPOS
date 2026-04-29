@@ -1,0 +1,54 @@
+﻿<Window x:Class="SupermarketPOS.UI.Windows.EmployeeEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="تعديل موظف" Width="500" Height="500"
+        WindowStartupLocation="CenterOwner" WindowStyle="None" ResizeMode="NoResize"
+        FlowDirection="RightToLeft" Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Border Background="{DynamicResource SecondaryBrush}" CornerRadius="16" Margin="10" Padding="24">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,16">
+                <TextBlock Text="👤 بيانات الموظف" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                <Button Content="✕" Width="35" Height="35" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+            </Grid>
+
+            <StackPanel Grid.Row="1">
+                <TextBlock Text="الكود" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="CodeBox" Margin="0,0,0,12"/>
+
+                <TextBlock Text="الاسم الكامل *" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="FullNameBox" Margin="0,0,0,12"/>
+
+                <TextBlock Text="التليفون" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="PhoneBox" Margin="0,0,0,12"/>
+                <TextBlock Text="البريد الإلكتروني" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="EmailBox" Margin="0,0,0,12"/>
+                <TextBlock Text="الوظيفة" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="PositionBox" Margin="0,0,0,12"/>
+                <TextBlock Text="الراتب الأساسي" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="BasicSalaryBox" Margin="0,0,0,12"/>
+                <TextBlock Text="البدلات" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="AllowancesBox" Text="0" Margin="0,0,0,12"/>
+                <TextBlock Text="الخصومات" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="DeductionsBox" Text="0" Margin="0,0,0,12"/>
+                <TextBlock Text="القسم" Style="{StaticResource LabelStyle}"/>
+                <ComboBox x:Name="DepartmentCombo" DisplayMemberPath="Name" SelectedValuePath="Id" Margin="0,0,0,12"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                <Button Content="إلغاء" Style="{StaticResource SecondaryButtonStyle}" Width="100" Click="CancelButton_Click"/>
+                <Button Content="💾 حفظ" Style="{StaticResource SuccessButtonStyle}" Width="100" Margin="8,0,0,0" Click="SaveButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

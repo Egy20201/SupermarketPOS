@@ -1,0 +1,49 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Primary Brushes -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource BackgroundPrimary}"/>
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource BackgroundSecondary}"/>
+    <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="{DynamicResource BackgroundSurfaceElevated}"/>
+    <SolidColorBrush x:Key="HoverBrush" Color="{DynamicResource BackgroundHover}"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}"/>
+
+    <!-- Text Brushes -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimary}"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
+    <SolidColorBrush x:Key="TextInverseBrush" Color="{DynamicResource BackgroundPrimary}"/>
+
+    <!-- Semantic Brushes -->
+    <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource Accent}"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="{DynamicResource Danger}"/>
+    <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource Warning}"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource Success}"/>
+    <SolidColorBrush x:Key="InfoBrush" Color="{DynamicResource Info}"/>
+
+    <!-- Input Brushes -->
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="{DynamicResource InputBackground}"/>
+    <SolidColorBrush x:Key="InputBorderBrush" Color="{DynamicResource InputBorder}"/>
+    <SolidColorBrush x:Key="InputFocusBorderBrush" Color="{DynamicResource InputFocusBorder}"/>
+    <SolidColorBrush x:Key="InputDisabledBrush" Color="{DynamicResource InputDisabled}"/>
+
+    <!-- Sidebar Brushes -->
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{DynamicResource SidebarBackground}"/>
+    <SolidColorBrush x:Key="SidebarTextBrush" Color="{DynamicResource SidebarText}"/>
+    <SolidColorBrush x:Key="SidebarHoverBrush" Color="{DynamicResource SidebarHover}"/>
+    <SolidColorBrush x:Key="SidebarActiveBrush" Color="{DynamicResource SidebarActive}"/>
+    <SolidColorBrush x:Key="SidebarActiveIndicatorBrush" Color="{DynamicResource SidebarActiveIndicator}"/>
+    <SolidColorBrush x:Key="SidebarDividerBrush" Color="{DynamicResource SidebarDivider}"/>
+    <SolidColorBrush x:Key="SidebarIconBrush" Color="{DynamicResource SidebarIcon}"/>
+    <SolidColorBrush x:Key="SidebarSubTextBrush" Color="{DynamicResource SidebarSubText}"/>
+    <SolidColorBrush x:Key="SidebarArrowBrush" Color="{DynamicResource SidebarArrow}"/>
+
+    <!-- Card Brushes -->
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource BackgroundSecondary}"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource BorderColor}"/>
+
+    <!-- DataGrid Brushes -->
+    <SolidColorBrush x:Key="DataGridHeaderBrush" Color="{DynamicResource BackgroundSurfaceElevated}"/>
+    <SolidColorBrush x:Key="DataGridAlternateBrush" Color="{DynamicResource BackgroundSurfaceElevated}"/>
+    <SolidColorBrush x:Key="DataGridHoverBrush" Color="{DynamicResource BackgroundHover}"/>
+    <SolidColorBrush x:Key="DataGridSelectedBrush" Color="{DynamicResource BackgroundSurfaceElevated}"/>
+</ResourceDictionary>

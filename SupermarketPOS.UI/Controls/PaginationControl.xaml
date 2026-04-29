@@ -1,0 +1,29 @@
+﻿<UserControl x:Class="SupermarketPOS.UI.Controls.PaginationControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" 
+            BorderThickness="0,1,0,0" Padding="16,8">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="ItemsCountText" Grid.Column="0" FontSize="13" 
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                <ComboBox x:Name="PageSizeCombo" Width="80" Height="32" SelectedIndex="1">
+                    <ComboBoxItem Content="25"/>
+                    <ComboBoxItem Content="50"/>
+                    <ComboBoxItem Content="100"/>
+                </ComboBox>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button x:Name="FirstPageButton" Content="◀◀" Width="36" Height="36" Margin="2"/>
+                <Button x:Name="PreviousPageButton" Content="◀" Width="36" Height="36" Margin="2"/>
+                <Button x:Name="NextPageButton" Content="▶" Width="36" Height="36" Margin="2"/>
+                <Button x:Name="LastPageButton" Content="▶▶" Width="36" Height="36" Margin="2"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

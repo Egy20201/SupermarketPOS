@@ -1,0 +1,57 @@
+﻿<local:BaseWindow x:Class="SupermarketPOS.UI.CustomerBalanceWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:local="clr-namespace:SupermarketPOS.UI"
+                  Title="أرصدة العملاء"
+                  WindowState="Maximized"
+                  WindowStyle="None"
+                  FlowDirection="RightToLeft"
+                  Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="MainGrid" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource HeaderBorderStyle}" Margin="0,0,0,16">
+            <Grid>
+                <TextBlock Text="💰 أرصدة العملاء" FontSize="24" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                <Button Content="✕" Width="40" Height="40" Style="{StaticResource IconButtonStyle}" Foreground="White" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <WrapPanel>
+                <TextBlock Text="🔍 بحث:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox x:Name="SearchBox" Width="300" Margin="0,0,16,0"/>
+                <Button Content="🔄 تحديث" Style="{StaticResource SecondaryButtonStyle}" Width="100" Click="RefreshButton_Click"/>
+                <Button Content="📊 تصدير" Style="{StaticResource SecondaryButtonStyle}" Width="100" Margin="8,0,0,0" Click="ExportButton_Click"/>
+            </WrapPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16" Padding="0">
+            <DataGrid x:Name="BalanceGrid" AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="الكود" Binding="{Binding Id}" Width="70"/>
+                    <DataGridTextColumn Header="الاسم" Binding="{Binding Name}" Width="250"/>
+                    <DataGridTextColumn Header="التليفون" Binding="{Binding Phone}" Width="150"/>
+                    <DataGridTextColumn Header="الرصيد" Binding="{Binding Balance, StringFormat={}{0:N2}}" Width="150"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}">
+            <WrapPanel HorizontalAlignment="Right">
+                <TextBlock x:Name="TotalCustomersText" FontSize="14" FontWeight="Bold" Margin="0,0,30,0"/>
+                <TextBlock x:Name="TotalBalanceText" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}"/>
+            </WrapPanel>
+        </Border>
+    </Grid>
+</local:BaseWindow>

@@ -1,0 +1,57 @@
+﻿<local:BaseWindow x:Class="SupermarketPOS.UI.AuditLogWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                  xmlns:local="clr-namespace:SupermarketPOS.UI"
+                  Title="سجل التدقيق"
+                  WindowState="Maximized"
+                  WindowStyle="None"
+                  FlowDirection="RightToLeft"
+                  Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="MainGrid" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource HeaderBorderStyle}" Margin="0,0,0,16">
+            <Grid>
+                <TextBlock Text="📋 سجل التدقيق" FontSize="24" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                <Button Content="✕" Width="40" Height="40" Style="{StaticResource IconButtonStyle}" Foreground="White" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <WrapPanel>
+                <TextBlock Text="من:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <DatePicker x:Name="FromDatePicker" Width="140" SelectedDate="{x:Static sys:DateTime.Today}" Margin="0,0,16,0"/>
+                <TextBlock Text="إلى:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <DatePicker x:Name="ToDatePicker" Width="140" SelectedDate="{x:Static sys:DateTime.Today}" Margin="0,0,16,0"/>
+                <TextBlock Text="النوع:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="ActionTypeFilter" Width="150" Margin="0,0,16,0"/>
+                <TextBlock Text="بحث:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox x:Name="SearchBox" Width="200" Margin="0,0,16,0"/>
+                <Button Content="🔄 تحديث" Style="{StaticResource PrimaryButtonStyle}" Width="100" Click="RefreshButton_Click"/>
+                <Button Content="📊 تصدير" Style="{StaticResource SecondaryButtonStyle}" Width="100" Margin="8,0,0,0" Click="ExportButton_Click"/>
+            </WrapPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Padding="0">
+            <DataGrid x:Name="AuditGrid" AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="التاريخ" Binding="{Binding Timestamp, StringFormat=yyyy/MM/dd HH:mm:ss}" Width="150"/>
+                    <DataGridTextColumn Header="المستخدم" Binding="{Binding UserName}" Width="120"/>
+                    <DataGridTextColumn Header="الإجراء" Binding="{Binding ActionType}" Width="120"/>
+                    <DataGridTextColumn Header="الجدول" Binding="{Binding EntityName}" Width="120"/>
+                    <DataGridTextColumn Header="الوصف" Binding="{Binding Description}" Width="350"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</local:BaseWindow>

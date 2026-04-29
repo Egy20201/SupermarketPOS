@@ -1,0 +1,85 @@
+﻿<local:BaseWindow x:Class="SupermarketPOS.UI.ProfitLossReportWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                  xmlns:local="clr-namespace:SupermarketPOS.UI"
+                  Title="الأرباح والخسائر"
+                  WindowState="Maximized"
+                  WindowStyle="None"
+                  FlowDirection="RightToLeft"
+                  Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="MainGrid" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource HeaderBorderStyle}" Margin="0,0,0,16">
+            <Grid>
+                <TextBlock Text="📊 تقرير الأرباح والخسائر" FontSize="24" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                <Button Content="✕" Width="40" Height="40" Style="{StaticResource IconButtonStyle}" Foreground="White" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <WrapPanel>
+                <TextBlock Text="من:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <DatePicker x:Name="FromDatePicker" Width="140" SelectedDate="{x:Static sys:DateTime.Today}" Margin="0,0,16,0"/>
+                <TextBlock Text="إلى:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <DatePicker x:Name="ToDatePicker" Width="140" SelectedDate="{x:Static sys:DateTime.Today}" Margin="0,0,16,0"/>
+                <Button Content="🔄 عرض" Style="{StaticResource PrimaryButtonStyle}" Width="100" Click="RefreshButton_Click"/>
+                <Button Content="📊 تصدير" Style="{StaticResource SecondaryButtonStyle}" Width="100" Margin="8,0,0,0" Click="ExportButton_Click"/>
+            </WrapPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="📈 الإيرادات" Style="{StaticResource Heading3Style}" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="TotalSalesText" Margin="0,2"/>
+                    <TextBlock x:Name="SalesReturnsText" Margin="0,2"/>
+                    <TextBlock x:Name="NetSalesText" Margin="0,8,0,0" FontWeight="Bold"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="📉 التكاليف والمصروفات" Style="{StaticResource Heading3Style}" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="COGSText" Margin="0,2"/>
+                    <TextBlock x:Name="ExpensesText" Margin="0,2"/>
+                    <TextBlock x:Name="TotalCostText" Margin="0,8,0,0" FontWeight="Bold"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16" Padding="0">
+            <DataGrid x:Name="DetailsGrid" AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="التاريخ" Binding="{Binding Date, StringFormat=dd/MM/yyyy}" Width="100"/>
+                    <DataGridTextColumn Header="النوع" Binding="{Binding Type}" Width="100"/>
+                    <DataGridTextColumn Header="المرجع" Binding="{Binding Reference}" Width="150"/>
+                    <DataGridTextColumn Header="إيراد" Binding="{Binding Revenue, StringFormat={}{0:N2}}" Width="120"/>
+                    <DataGridTextColumn Header="مصروف" Binding="{Binding Expense, StringFormat={}{0:N2}}" Width="120"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Border Grid.Row="4" Style="{StaticResource HeaderBorderStyle}">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock x:Name="NetProfitText" FontSize="20" FontWeight="Bold" Foreground="White"/>
+                <TextBlock x:Name="NetProfitPercentText" FontSize="14" Foreground="White"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</local:BaseWindow>

@@ -1,0 +1,28 @@
+<UserControl x:Class="SupermarketPOS.UI.Controls.Dynamic.DynamicField"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Margin="0,0,0,12">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Label -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
+            <TextBlock x:Name="FieldLabel" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+            <TextBlock x:Name="RequiredMarker" Text=" *" FontSize="13" FontWeight="Bold"
+                       Foreground="#EF4444" Visibility="Collapsed"/>
+        </StackPanel>
+
+        <!-- Control Host (populated in code-behind) -->
+        <ContentPresenter x:Name="ControlHost" Grid.Row="1"/>
+
+        <!-- Validation Error -->
+        <TextBlock x:Name="ErrorText" Grid.Row="2" FontSize="11" 
+                   Foreground="#EF4444" Margin="0,2,0,0" TextWrapping="Wrap"
+                   Visibility="Collapsed"/>
+    </Grid>
+</UserControl>

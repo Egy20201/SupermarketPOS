@@ -1,0 +1,43 @@
+<Window x:Class="SupermarketPOS.UI.Windows.LeadEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="إضافة عميل محتمل" Width="500" Height="450"
+        WindowStartupLocation="CenterOwner" WindowStyle="None" ResizeMode="NoResize"
+        FlowDirection="RightToLeft" Background="{DynamicResource BackgroundBrush}">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+    <Border Background="{DynamicResource SecondaryBrush}" CornerRadius="16" Margin="10" Padding="24">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="🎯 عميل محتمل جديد" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+            <StackPanel Grid.Row="1">
+                <TextBlock Text="الاسم الكامل *" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="FullNameBox" Margin="0,0,0,12"/>
+                <TextBlock Text="اسم الشركة" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="CompanyBox" Margin="0,0,0,12"/>
+                <TextBlock Text="التليفون" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="PhoneBox" Margin="0,0,0,12"/>
+                <TextBlock Text="البريد" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="EmailBox" Margin="0,0,0,12"/>
+                <TextBlock Text="المصدر" Style="{StaticResource LabelStyle}"/>
+                <ComboBox x:Name="SourceCombo" Margin="0,0,0,12">
+                    <ComboBoxItem Content="Website"/>
+                    <ComboBoxItem Content="Phone"/>
+                    <ComboBoxItem Content="Referral"/>
+                    <ComboBoxItem Content="Walk-in"/>
+                </ComboBox>
+                <TextBlock Text="القيمة المتوقعة" Style="{StaticResource LabelStyle}"/>
+                <TextBox x:Name="ValueBox" Text="0" Margin="0,0,0,12"/>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                <Button Content="إلغاء" Style="{StaticResource SecondaryButtonStyle}" Width="100" Click="CancelButton_Click"/>
+                <Button Content="💾 حفظ" Style="{StaticResource SuccessButtonStyle}" Width="100" Margin="8,0,0,0" Click="SaveButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

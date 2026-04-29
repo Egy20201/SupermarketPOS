@@ -1,0 +1,16 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:Double x:Key="Spacing_4">4</sys:Double>
+    <sys:Double x:Key="Spacing_8">8</sys:Double>
+    <sys:Double x:Key="Spacing_12">12</sys:Double>
+    <sys:Double x:Key="Spacing_16">16</sys:Double>
+    <sys:Double x:Key="Spacing_24">24</sys:Double>
+    <sys:Double x:Key="Spacing_32">32</sys:Double>
+
+    <CornerRadius x:Key="Radius_6">6</CornerRadius>
+    <CornerRadius x:Key="Radius_8">8</CornerRadius>
+    <CornerRadius x:Key="Radius_12">12</CornerRadius>
+    <CornerRadius x:Key="Radius_16">16</CornerRadius>
+</ResourceDictionary>

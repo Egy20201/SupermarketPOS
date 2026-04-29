@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SupermarketPOS.Business/SupermarketPOS.Business.csproj" Id="8f10ecf7-4aed-472b-ae60-e26ff117351b" />
+  <Project Path="SupermarketPOS.Core/SupermarketPOS.Core.csproj" Id="b134516b-737e-4829-a131-0938f4ccdd46" />
+  <Project Path="SupermarketPOS.Data/SupermarketPOS.Data.csproj" Id="2ffa6ff1-8ea1-4577-b1ba-f0db24416761" />
+  <Project Path="SupermarketPOS.UI/SupermarketPOS.UI.csproj" Id="bea3202f-f726-44a6-bd6e-d08ab36e4cd4" />
+</Solution>

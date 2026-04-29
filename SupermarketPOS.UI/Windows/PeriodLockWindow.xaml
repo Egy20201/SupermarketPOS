@@ -1,0 +1,66 @@
+﻿<local:BaseWindow x:Class="SupermarketPOS.UI.PeriodLockWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                  xmlns:local="clr-namespace:SupermarketPOS.UI"
+                  Title="قفل الفترات المالية"
+                  WindowState="Maximized"
+                  WindowStyle="None"
+                  FlowDirection="RightToLeft"
+                  Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="MainGrid" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource HeaderBorderStyle}" Margin="0,0,0,16">
+            <Grid>
+                <TextBlock Text="🔒 قفل الفترات المالية" FontSize="24" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                <Button Content="✕" Width="40" Height="40" Style="{StaticResource IconButtonStyle}" Foreground="White" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <WrapPanel HorizontalAlignment="Center">
+                <TextBlock Text="السنة:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="YearCombo" Width="100" Margin="0,0,16,0"/>
+                <TextBlock Text="الشهر:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="MonthCombo" Width="120" Margin="0,0,16,0"/>
+                <TextBlock Text="سبب القفل:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox x:Name="ReasonBox" Width="250" Margin="0,0,16,0"/>
+                <Button Content="🔒 قفل الفترة" Style="{StaticResource DangerButtonStyle}" Width="120" Click="LockButton_Click"/>
+            </WrapPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <TextBlock Text="⚠️ الفترات المقفلة لا يمكن إجراء أي عمليات (بيع/شراء/مصروفات) عليها." FontSize="14" Foreground="{DynamicResource WarningBrush}" HorizontalAlignment="Center"/>
+        </Border>
+
+        <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}" Padding="0">
+            <DataGrid x:Name="PeriodsGrid" AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="الفترة" Binding="{Binding PeriodDisplay}" Width="150"/>
+                    <DataGridTextColumn Header="تاريخ البداية" Binding="{Binding StartDate, StringFormat=dd/MM/yyyy}" Width="120"/>
+                    <DataGridTextColumn Header="تاريخ النهاية" Binding="{Binding EndDate, StringFormat=dd/MM/yyyy}" Width="120"/>
+                    <DataGridTextColumn Header="تاريخ القفل" Binding="{Binding LockedAt, StringFormat=dd/MM/yyyy HH:mm}" Width="150"/>
+                    <DataGridTextColumn Header="سبب القفل" Binding="{Binding LockReason}" Width="250"/>
+                    <DataGridTemplateColumn Header="" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="🔓 فتح" Style="{StaticResource SecondaryButtonStyle}" Click="UnlockButton_Click"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</local:BaseWindow>

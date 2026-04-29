@@ -1,0 +1,35 @@
+<Window x:Class="SupermarketPOS.UI.Windows.SystemSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="System Settings"
+        Height="220"
+        Width="360"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="نوع النشاط"
+                   FontSize="16"/>
+
+        <ComboBox x:Name="BusinessTypeCombo"
+                  Grid.Row="2"
+                  Height="30"
+                  SelectedValuePath="Tag"
+                  DisplayMemberPath="Content">
+            <ComboBoxItem Content="Supermarket" Tag="supermarket"/>
+            <ComboBoxItem Content="Pharmacy" Tag="pharmacy"/>
+        </ComboBox>
+
+        <Button Grid.Row="4"
+                Height="36"
+                Content="حفظ"
+                Click="SaveButton_Click"/>
+    </Grid>
+</Window>

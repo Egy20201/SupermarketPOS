@@ -1,0 +1,111 @@
+﻿<local:BaseWindow x:Class="SupermarketPOS.UI.BalanceSheetWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                  xmlns:local="clr-namespace:SupermarketPOS.UI"
+                  Title="الميزانية العمومية"
+                  WindowState="Maximized"
+                  WindowStyle="None"
+                  FlowDirection="RightToLeft"
+                  Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="MainGrid" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource HeaderBorderStyle}" Margin="0,0,0,16">
+            <Grid>
+                <TextBlock Text="📈 الميزانية العمومية" FontSize="24" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                <Button Content="✕" Width="40" Height="40" Style="{StaticResource IconButtonStyle}" Foreground="White" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <WrapPanel HorizontalAlignment="Center">
+                <TextBlock Text="تاريخ الميزانية:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <DatePicker x:Name="AsOfDatePicker" Width="150" SelectedDate="{x:Static sys:DateTime.Today}" Margin="0,0,16,0"/>
+                <Button Content="🔄 تحديث" Style="{StaticResource PrimaryButtonStyle}" Width="100" Click="RefreshButton_Click"/>
+                <Button Content="📊 تصدير" Style="{StaticResource SecondaryButtonStyle}" Width="100" Margin="8,0,0,0" Click="ExportButton_Click"/>
+            </WrapPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Margin="0,0,8,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Background="{StaticResource PrimaryBrush}" CornerRadius="8,8,0,0" Padding="10">
+                        <TextBlock Text="💰 الأصول" FontSize="16" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                    </Border>
+                    <DataGrid x:Name="AssetsGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="الحساب" Binding="{Binding AccountName}" Width="*"/>
+                            <DataGridTextColumn Header="الرصيد" Binding="{Binding Balance, StringFormat={}{0:N2}}" Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Margin="4,0,4,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Background="#F44336" CornerRadius="8,8,0,0" Padding="10">
+                        <TextBlock Text="📋 الالتزامات" FontSize="16" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                    </Border>
+                    <DataGrid x:Name="LiabilitiesGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="الحساب" Binding="{Binding AccountName}" Width="*"/>
+                            <DataGridTextColumn Header="الرصيد" Binding="{Binding Balance, StringFormat={}{0:N2}}" Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}" Margin="8,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Background="#4CAF50" CornerRadius="8,8,0,0" Padding="10">
+                        <TextBlock Text="🏛️ حقوق الملكية" FontSize="16" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                    </Border>
+                    <DataGrid x:Name="EquityGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="الحساب" Binding="{Binding AccountName}" Width="*"/>
+                            <DataGridTextColumn Header="الرصيد" Binding="{Binding Balance, StringFormat={}{0:N2}}" Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="3" Style="{StaticResource HeaderBorderStyle}" Margin="0,16,0,0">
+            <WrapPanel HorizontalAlignment="Center">
+                <TextBlock x:Name="TotalAssetsText" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,30,0"/>
+                <TextBlock x:Name="TotalLiabilitiesText" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,30,0"/>
+                <TextBlock x:Name="TotalEquityText" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,30,0"/>
+                <TextBlock x:Name="BalanceCheckText" FontSize="16" FontWeight="Bold" Foreground="Yellow"/>
+            </WrapPanel>
+        </Border>
+    </Grid>
+</local:BaseWindow>

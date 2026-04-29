@@ -1,0 +1,87 @@
+﻿<local:BaseWindow x:Class="SupermarketPOS.UI.PurchaseInvoiceWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                  xmlns:local="clr-namespace:SupermarketPOS.UI"
+                  xmlns:controls="clr-namespace:SupermarketPOS.UI.Controls"
+                  Title="فاتورة شراء"
+                  WindowState="Maximized"
+                  WindowStyle="None"
+                  FlowDirection="RightToLeft"
+                  Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="MainGrid" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource HeaderBorderStyle}" Margin="0,0,0,16">
+            <Grid>
+                <TextBlock Text="🧾 فاتورة شراء" FontSize="24" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                <Button Content="✕" Width="40" Height="40" Style="{StaticResource IconButtonStyle}" Foreground="White" HorizontalAlignment="Right" Click="CloseButton_Click"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <WrapPanel>
+                <TextBlock Text="رقم الفاتورة:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock x:Name="InvoiceNumberBox" Width="100" FontWeight="Bold" Foreground="{DynamicResource PrimaryBrush}" Margin="0,0,24,0" Text="{Binding InvoiceNumber}"/>
+                <TextBlock Text="التاريخ:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <DatePicker x:Name="InvoiceDatePicker" Width="150" SelectedDate="{Binding InvoiceDate}" Margin="0,0,24,0"/>
+                <TextBlock Text="المورد:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="SupplierCombo" Width="250" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedItem="{Binding SelectedSupplier}"/>
+            </WrapPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <WrapPanel>
+                <TextBlock Text="المخزن:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="WarehouseCombo" Width="200" Margin="0,0,24,0" SelectedItem="{Binding SelectedWarehouse}"/>
+                <TextBlock Text="نوع الدفع:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="PaymentTypeCombo" Width="120" SelectedIndex="0" Margin="0,0,24,0" SelectedItem="{Binding PaymentType}"/>
+                <TextBlock Text="المدفوع:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox x:Name="PaidAmountBox" Width="120" Text="{Binding PaidAmount}"/>
+            </WrapPanel>
+        </Border>
+
+        <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16" Padding="0">
+            <controls:EnhancedDataGrid x:Name="CartGrid" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}">
+                <controls:EnhancedDataGrid.Columns>
+                    <DataGridTextColumn Header="#" Width="50" Binding="{Binding RowIndex}"/>
+                    <DataGridTextColumn Header="كود الصنف" Binding="{Binding ProductCode}" Width="130"/>
+                    <DataGridTextColumn Header="اسم الصنف" Binding="{Binding ProductName}" Width="250"/>
+                    <DataGridTextColumn Header="الكمية" Binding="{Binding Quantity}" Width="90"/>
+                    <DataGridTextColumn Header="سعر الوحدة" Binding="{Binding UnitPrice, StringFormat={}{0:N2}}" Width="110"/>
+                    <DataGridTextColumn Header="الخصم" Binding="{Binding Discount, StringFormat={}{0:N2}}" Width="90"/>
+                    <DataGridTextColumn Header="الإجمالي" Binding="{Binding Total, StringFormat={}{0:N2}}" Width="120" IsReadOnly="True"/>
+                </controls:EnhancedDataGrid.Columns>
+            </controls:EnhancedDataGrid>
+        </Border>
+
+        <Border Grid.Row="4" Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
+            <StackPanel HorizontalAlignment="Right">
+                <TextBlock x:Name="SubtotalText" FontSize="16" Margin="0,2" Text="{Binding SubtotalDisplay}"/>
+                <TextBlock x:Name="DiscountTotalText" FontSize="16" Margin="0,2" Text="{Binding DiscountDisplay}"/>
+                <TextBlock x:Name="TaxText" FontSize="16" Margin="0,2" Text="{Binding TaxDisplay}"/>
+                <TextBlock x:Name="NetTotalText" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" Margin="0,8,0,0" Text="{Binding NetTotalDisplay}"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="5" Style="{StaticResource CardBorderStyle}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="❌ إلغاء" Style="{StaticResource SecondaryButtonStyle}" Width="110" Click="CancelButton_Click"/>
+                <Button Content="💾 حفظ (F12)" Style="{StaticResource SuccessButtonStyle}" Width="130" Margin="8,0,0,0" Command="{Binding SaveCommand}"/>
+                <Button Content="🖨️ طباعة" Style="{StaticResource SecondaryButtonStyle}" Width="110" Margin="8,0,0,0" Click="PrintButton_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</local:BaseWindow>

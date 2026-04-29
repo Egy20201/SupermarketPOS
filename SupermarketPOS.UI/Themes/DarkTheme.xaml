@@ -1,0 +1,43 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Window Shell -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#0F172A"/>
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#0F172A"/>
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#0F172A"/>
+    <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="#1A2332"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#1E293B"/>
+
+    <!-- Header -->
+    <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#1A2332"/>
+    <SolidColorBrush x:Key="HeaderBorderBrush" Color="#2A3442"/>
+    <SolidColorBrush x:Key="HeaderButtonForegroundBrush" Color="#B0B8C5"/>
+    <SolidColorBrush x:Key="HeaderButtonHoverBrush" Color="#2A3442"/>
+    <SolidColorBrush x:Key="CloseButtonHoverBrush" Color="#FF5252"/>
+
+    <!-- Footer -->
+    <SolidColorBrush x:Key="FooterBackgroundBrush" Color="#1A2332"/>
+
+    <!-- Sidebar -->
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#0B1120"/>
+    <SolidColorBrush x:Key="SidebarTextBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="SidebarSubTextBrush" Color="#B0B8C5"/>
+    <SolidColorBrush x:Key="SidebarHoverBrush" Color="#1E293B"/>
+    <SolidColorBrush x:Key="SidebarActiveBrush" Color="#1A3A2A"/>
+    <SolidColorBrush x:Key="SidebarActiveBorderBrush" Color="#10B981"/>
+    <SolidColorBrush x:Key="SidebarDividerBrush" Color="#1E293B"/>
+    <SolidColorBrush x:Key="UserProfileBackgroundBrush" Color="#1E293B"/>
+    <SolidColorBrush x:Key="LogoutButtonBrush" Color="#FF5252"/>
+    <SolidColorBrush x:Key="LogoutHoverBrush" Color="#3B1A1A"/>
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="PageTitleBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#6B7A8F"/>
+
+    <!-- Status -->
+    <SolidColorBrush x:Key="ConnectionStatusBrush" Color="#6B7A8F"/>
+    <SolidColorBrush x:Key="DateTimeBrush" Color="#6B7A8F"/>
+
+    <!-- Charts -->
+    <SolidColorBrush x:Key="ChartGridBrush" Color="#2A3442"/>
+</ResourceDictionary>

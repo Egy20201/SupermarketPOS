@@ -1,0 +1,100 @@
+<UserControl x:Class="SupermarketPOS.UI.Controls.Dynamic.DynamicGrid"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar: Search + Actions -->
+        <Border Grid.Row="0" Style="{DynamicResource CardBorderStyle}" Padding="12" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Search -->
+                <Border Grid.Column="0" Background="{DynamicResource InputBackgroundBrush}" 
+                        BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="8,4" Width="280" Margin="0,0,8,0">
+                    <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             VerticalAlignment="Center" FontSize="13"/>
+                </Border>
+
+                <Button x:Name="SearchButton" Grid.Column="2" Content="بحث"
+                        Style="{DynamicResource SecondaryButtonStyle}" Width="80" Height="36" Margin="0,0,8,0"/>
+
+                <Button x:Name="RefreshButton" Grid.Column="3" Content="تحديث"
+                        Style="{DynamicResource SecondaryButtonStyle}" Width="80" Height="36" Margin="0,0,8,0"/>
+
+                <Button x:Name="DeleteButton" Grid.Column="4" Content="حذف"
+                        Width="80" Height="36" Margin="0,0,8,0"
+                        Background="#DC2626" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+
+                <Button x:Name="CreateButton" Grid.Column="5" Content="+ إنشاء"
+                        Style="{DynamicResource SuccessButtonStyle}" Width="100" Height="36"/>
+            </Grid>
+        </Border>
+
+        <!-- Data Grid (Phase 3.6: full virtualization hardening) -->
+        <Border Grid.Row="1" Style="{DynamicResource CardBorderStyle}" Padding="0">
+            <DataGrid x:Name="DataGrid" AutoGenerateColumns="False"
+                      CanUserAddRows="False" CanUserDeleteRows="False"
+                      RowHeight="42" HeadersVisibility="Column"
+                      Background="Transparent" BorderThickness="0"
+                      GridLinesVisibility="None"
+                      SelectionMode="Single"
+                      IsReadOnly="True"
+                      EnableRowVirtualization="True"
+                      EnableColumnVirtualization="True"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      VirtualizingPanel.ScrollUnit="Pixel"
+                      ScrollViewer.IsDeferredScrollingEnabled="True"
+                      AlternatingRowBackground="{DynamicResource SurfaceElevatedBrush}"
+                      RowBackground="{DynamicResource SecondaryBrush}"/>
+        </Border>
+
+        <!-- Pagination -->
+        <Border Grid.Row="2" Style="{DynamicResource CardBorderStyle}" Padding="12" Margin="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="ItemsCountText" Grid.Column="0" 
+                           Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
+                           VerticalAlignment="Center"/>
+
+                <TextBlock x:Name="StatusText" Grid.Column="1" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="FirstPageBtn" Content="⏮" Width="32" Height="32" 
+                            Style="{DynamicResource IconButtonStyle}" Margin="0,0,4,0"/>
+                    <Button x:Name="PrevPageBtn" Content="◀" Width="32" Height="32" 
+                            Style="{DynamicResource IconButtonStyle}" Margin="0,0,4,0"/>
+                    <TextBlock x:Name="PageInfoText" VerticalAlignment="Center" 
+                               Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12"
+                               Margin="0,0,8,0"/>
+                    <Button x:Name="NextPageBtn" Content="▶" Width="32" Height="32" 
+                            Style="{DynamicResource IconButtonStyle}" Margin="0,0,4,0"/>
+                    <Button x:Name="LastPageBtn" Content="⏭" Width="32" Height="32" 
+                            Style="{DynamicResource IconButtonStyle}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,142 @@
+<controls:BasePage x:Class="SupermarketPOS.UI.Views.ProductsView"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:controls="clr-namespace:SupermarketPOS.UI.Controls"
+                   xmlns:local="clr-namespace:SupermarketPOS.UI.Views"
+                   FlowDirection="RightToLeft">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border x:Name="LoadingOverlay" Grid.RowSpan="2" Background="#99000000" Visibility="Collapsed" Panel.ZIndex="100">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="⏳" FontSize="48" HorizontalAlignment="Center"/>
+                <TextBlock Text="جاري التحميل..." FontSize="16" Foreground="White" Margin="0,8,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="0" Style="{DynamicResource CardBorderStyle}" Padding="16" Margin="0,0,0,16">
+            <WrapPanel>
+                <Border Background="{DynamicResource InputBackgroundBrush}" 
+                        BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="8,4" Width="280" Margin="0,0,12,0">
+                    <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             VerticalAlignment="Center" FontSize="13"
+                             TextChanged="SearchBox_TextChanged"/>
+                </Border>
+                <ComboBox x:Name="CategoryFilterCombo" Width="180" Margin="0,0,12,0"
+                          DisplayMemberPath="Name" SelectedValuePath="Id"
+                          SelectionChanged="CategoryFilterCombo_SelectionChanged"
+                          Background="{DynamicResource InputBackgroundBrush}"
+                          Foreground="{DynamicResource TextPrimaryBrush}"
+                          BorderBrush="{DynamicResource InputBorderBrush}"/>
+                <Button Content="🔍 بحث" Style="{DynamicResource SecondaryButtonStyle}" Width="90" 
+                        Margin="0,0,8,0" Click="FilterButton_Click"/>
+                <Button Content="+ منتج جديد" Style="{DynamicResource SuccessButtonStyle}" Width="120"
+                        Click="AddButton_Click"/>
+                <Button Content="📤 تصدير" Style="{DynamicResource IconButtonStyle}" Width="40" 
+                        Margin="8,0,0,0" Click="ExportButton_Click"/>
+            </WrapPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="6"/>
+                <ColumnDefinition Width="420"/>
+            </Grid.ColumnDefinitions>
+
+            <controls:ListViewLayout x:Name="ProductsList" Grid.Column="0"/>
+
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" 
+                          Background="{DynamicResource BorderBrush}" Width="2"/>
+
+            <Border Grid.Column="2" Style="{DynamicResource CardBorderStyle}" Padding="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="بيانات المنتج" FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+
+                        <TextBlock Text="اسم المنتج *" Style="{StaticResource LabelStyle}"/>
+                        <TextBox x:Name="NameBox" Margin="0,4,0,12" Height="36"
+                                 Background="{DynamicResource InputBackgroundBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 BorderBrush="{DynamicResource InputBorderBrush}"/>
+
+                        <TextBlock Text="الباركود" Style="{StaticResource LabelStyle}"/>
+                        <TextBox x:Name="BarcodeBox" Margin="0,4,0,12" Height="36"
+                                 Background="{DynamicResource InputBackgroundBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 BorderBrush="{DynamicResource InputBorderBrush}"/>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="الفئة *" Style="{StaticResource LabelStyle}"/>
+                                <ComboBox x:Name="CategoryCombo" Height="36"
+                                          DisplayMemberPath="Name" SelectedValuePath="Id"
+                                          Background="{DynamicResource InputBackgroundBrush}"
+                                          Foreground="{DynamicResource TextPrimaryBrush}"
+                                          BorderBrush="{DynamicResource InputBorderBrush}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="الوحدة" Style="{StaticResource LabelStyle}"/>
+                                <ComboBox x:Name="UnitCombo" Height="36"
+                                          DisplayMemberPath="Name" SelectedValuePath="Id"
+                                          Background="{DynamicResource InputBackgroundBrush}"
+                                          Foreground="{DynamicResource TextPrimaryBrush}"
+                                          BorderBrush="{DynamicResource InputBorderBrush}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="سعر الشراء" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="PurchaseBox" Height="36" Text="0"
+                                         Background="{DynamicResource InputBackgroundBrush}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                         BorderBrush="{DynamicResource InputBorderBrush}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="سعر البيع *" Style="{StaticResource LabelStyle}"/>
+                                <TextBox x:Name="SellBox" Height="36"
+                                         Background="{DynamicResource InputBackgroundBrush}"
+                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                         BorderBrush="{DynamicResource InputBorderBrush}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="حد إعادة الطلب" Style="{StaticResource LabelStyle}"/>
+                        <TextBox x:Name="ReorderBox" Height="36" Text="10"
+                                 Background="{DynamicResource InputBackgroundBrush}"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 BorderBrush="{DynamicResource InputBorderBrush}"
+                                 Margin="0,4,0,16"/>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                            <Button Content="❌ إلغاء" Style="{DynamicResource SecondaryButtonStyle}" 
+                                    Width="100" Click="CancelButton_Click"/>
+                            <Button Content="🗑️ حذف" Style="{DynamicResource DangerButtonStyle}" 
+                                    Width="100" Margin="8,0,0,0" Click="DeleteButton_Click"/>
+                            <Button Content="💾 حفظ" Style="{DynamicResource SuccessButtonStyle}" 
+                                    Width="100" Margin="8,0,0,0" Click="SaveButton_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</controls:BasePage>

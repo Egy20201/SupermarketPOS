@@ -1,0 +1,89 @@
+﻿<local:BaseWindow x:Class="SupermarketPOS.UI.ChartOfAccountsWindow"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                  xmlns:local="clr-namespace:SupermarketPOS.UI"
+                  Title="شجرة الحسابات"
+                  WindowState="Maximized"
+                  WindowStyle="None"
+                  FlowDirection="RightToLeft"
+                  Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0" ResizeBorderThickness="4"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid x:Name="MainGrid" Margin="24">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="380"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Margin="0,0,12,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Margin="0,0,0,16">
+                    <TextBlock Text="🌳 شجرة الحسابات" Style="{StaticResource Heading2Style}" HorizontalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="🔄" Style="{StaticResource IconButtonStyle}" Click="RefreshButton_Click"/>
+                    </StackPanel>
+                </Grid>
+
+                <TreeView x:Name="AccountsTreeView" Grid.Row="1" SelectedItemChanged="TreeView_SelectedItemChanged"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Margin="12,0,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="📝 بيانات الحساب" Style="{StaticResource Heading2Style}" Margin="0,0,0,16"/>
+
+                <StackPanel Grid.Row="1">
+                    <TextBlock Text="كود الحساب" Style="{StaticResource LabelStyle}"/>
+                    <TextBox x:Name="CodeBox" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="اسم الحساب" Style="{StaticResource LabelStyle}"/>
+                    <TextBox x:Name="NameBox" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="نوع الحساب" Style="{StaticResource LabelStyle}"/>
+                    <ComboBox x:Name="TypeCombo" Margin="0,0,0,12">
+                        <ComboBoxItem Content="أصل"/>
+                        <ComboBoxItem Content="خصم"/>
+                        <ComboBoxItem Content="ملكية"/>
+                        <ComboBoxItem Content="إيراد"/>
+                        <ComboBoxItem Content="مصروف"/>
+                    </ComboBox>
+
+                    <TextBlock Text="الحساب الأب" Style="{StaticResource LabelStyle}"/>
+                    <ComboBox x:Name="ParentCombo" Margin="0,0,0,12" DisplayMemberPath="Name" SelectedValuePath="Id"/>
+
+                    <TextBlock Text="الرصيد الافتتاحي" Style="{StaticResource LabelStyle}"/>
+                    <WrapPanel Margin="0,0,0,12">
+                        <TextBox x:Name="OpeningBalanceBox" Width="150" Text="0"/>
+                        <ComboBox x:Name="BalanceTypeCombo" Width="80" Margin="8,0,0,0" SelectedIndex="0">
+                            <ComboBoxItem Content="مدين"/>
+                            <ComboBoxItem Content="دائن"/>
+                        </ComboBox>
+                    </WrapPanel>
+
+                    <CheckBox x:Name="IsActiveCheck" Content="نشط" IsChecked="True"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                    <Button Content="💾 حفظ" Style="{StaticResource SuccessButtonStyle}" Width="100" Click="SaveButton_Click"/>
+                    <Button Content="🗑️ حذف" Style="{StaticResource DangerButtonStyle}" Width="100" Margin="8,0,0,0" Click="DeleteButton_Click"/>
+                    <Button Content="🔄 جديد" Style="{StaticResource SecondaryButtonStyle}" Width="100" Margin="8,0,0,0" Click="ClearButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</local:BaseWindow>
