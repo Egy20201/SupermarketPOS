@@ -1,5 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SupermarketPOS.Business.Observability;
+using SupermarketPOS.Core.Observability;
 using SupermarketPOS.Data;
 using System;
 using System.Collections.Generic;
@@ -78,22 +80,27 @@ namespace SupermarketPOS.Business.Workflow
 
                 try
                 {
-                    var payload = JsonConvert.DeserializeObject<JObject>(evt.Payload);
-                    string entityName = payload?.Value<string>("EntityName");
-                    int? entityId = payload?.Value<int?>("EntityId");
-                    var data = payload?["Data"]?.ToObject<Dictionary<string, object>>();
-
-                    if (!string.IsNullOrWhiteSpace(entityName))
+                    using (CorrelationContext.BeginScope())
                     {
-                        await _workflowEngine.ExecuteAsync(entityName, trigger, entityId, data, cancellationToken)
-                            .ConfigureAwait(false);
-                    }
+                        StructuredLogger.Debug("Outbox", "Process", $"EventId={evt.Id} Type={evt.EventType}");
 
-                    MarkProcessed(evt.Id, null);
+                        var payload = JsonConvert.DeserializeObject<JObject>(evt.Payload);
+                        string entityName = payload?.Value<string>("EntityName");
+                        int? entityId = payload?.Value<int?>("EntityId");
+                        var data = payload?["Data"]?.ToObject<Dictionary<string, object>>();
+
+                        if (!string.IsNullOrWhiteSpace(entityName))
+                        {
+                            await _workflowEngine.ExecuteAsync(entityName, trigger, entityId, data, cancellationToken)
+                                .ConfigureAwait(false);
+                        }
+
+                        MarkProcessed(evt.Id, null);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    MarkFailed(evt.Id, ex.Message);
+                    MarkFailed(evt.Id, ex.Message, evt.Payload);
                 }
             }
 
@@ -180,7 +187,7 @@ namespace SupermarketPOS.Business.Workflow
             catch (Exception) { }
         }
 
-        private void MarkFailed(int id, string error)
+        private void MarkFailed(int id, string error, string payload = null)
         {
             try
             {
@@ -189,6 +196,18 @@ namespace SupermarketPOS.Business.Workflow
                     var conn = db.Database.Connection;
                     if (conn.State != ConnectionState.Open)
                         conn.Open();
+
+                    // Check current retry count
+                    int retryCount = 0;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = "SELECT RetryCount FROM [OutboxEvents] WHERE Id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+                        var result = cmd.ExecuteScalar();
+                        if (result != null) retryCount = Convert.ToInt32(result);
+                    }
+
+                    bool moveToDeadLetter = retryCount >= 2; // 0-indexed: 3rd retry
 
                     using (var cmd = conn.CreateCommand())
                     {
@@ -204,6 +223,32 @@ namespace SupermarketPOS.Business.Workflow
                         cmd.Parameters.Add(new SqlParameter("@error", (object)error ?? DBNull.Value));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
                         cmd.ExecuteNonQuery();
+                    }
+
+                    // Phase 5: Move to dead letter queue after max retries
+                    if (moveToDeadLetter && !string.IsNullOrWhiteSpace(payload))
+                    {
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.CommandText = @"
+                                INSERT INTO [DeadLetterEvents]
+                                    ([SourceType], [SourceEventId], [Payload], [ErrorMessage], [RetryCount],
+                                     [CreatedAt], [Status], [CorrelationId])
+                                VALUES
+                                    ('OutboxEvent', @eventId, @payload, @error, @retries,
+                                     @now, 'Dead', @cid)";
+                            cmd.Parameters.Add(new SqlParameter("@eventId", id));
+                            cmd.Parameters.Add(new SqlParameter("@payload", payload));
+                            cmd.Parameters.Add(new SqlParameter("@error", (object)error ?? DBNull.Value));
+                            cmd.Parameters.Add(new SqlParameter("@retries", retryCount + 1));
+                            cmd.Parameters.Add(new SqlParameter("@now", DateTime.UtcNow));
+                            cmd.Parameters.Add(new SqlParameter("@cid",
+                                (object)CorrelationContext.CorrelationId ?? DBNull.Value));
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        StructuredLogger.Warning("Outbox", "DeadLetter",
+                            $"Event {id} moved to dead letter after {retryCount + 1} retries: {error}");
                     }
                 }
             }

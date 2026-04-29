@@ -1,6 +1,8 @@
 using Newtonsoft.Json;
 using SupermarketPOS.Business.Metadata;
+using SupermarketPOS.Business.Observability;
 using SupermarketPOS.Core.Metadata;
+using SupermarketPOS.Core.Observability;
 using SupermarketPOS.Data;
 using System;
 using System.Collections.Generic;
@@ -373,6 +375,8 @@ namespace SupermarketPOS.Business.Workflow
         //  Audit Logging (Step 6)
         // ================================================================
 
+        private int _stepCounter;
+
         private void LogExecution(
             int workflowId, int? ruleId, int? actionId,
             string entityName, int? entityId,
@@ -381,6 +385,12 @@ namespace SupermarketPOS.Business.Workflow
         {
             try
             {
+                int stepOrder = Interlocked.Increment(ref _stepCounter);
+                var correlationId = CorrelationContext.CorrelationId;
+
+                StructuredLogger.Debug(entityName, "Workflow",
+                    $"Step {stepOrder}: W={workflowId} R={ruleId} A={actionId} [{status}]");
+
                 using (var db = _dbFactory())
                 {
                     var conn = db.Database.Connection;
@@ -392,10 +402,12 @@ namespace SupermarketPOS.Business.Workflow
                         cmd.CommandText = @"
                             INSERT INTO [WorkflowExecutionLogs]
                                 ([WorkflowId], [RuleId], [ActionId], [EntityName], [EntityId],
-                                 [Trigger], [Status], [ResultJson], [ErrorMessage], [ExecutedAt], [UserId])
+                                 [Trigger], [Status], [ResultJson], [ErrorMessage], [ExecutedAt], [UserId],
+                                 [CorrelationId], [StepOrder])
                             VALUES
                                 (@wId, @rId, @aId, @entity, @eId,
-                                 @trigger, @status, @result, @error, @now, @userId)";
+                                 @trigger, @status, @result, @error, @now, @userId,
+                                 @cid, @step)";
                         cmd.CommandTimeout = 5;
                         cmd.Parameters.Add(new SqlParameter("@wId", workflowId));
                         cmd.Parameters.Add(new SqlParameter("@rId", (object)ruleId ?? DBNull.Value));
@@ -407,6 +419,8 @@ namespace SupermarketPOS.Business.Workflow
                         cmd.Parameters.Add(new SqlParameter("@result", (object)resultJson ?? DBNull.Value));
                         cmd.Parameters.Add(new SqlParameter("@error", (object)errorMessage ?? DBNull.Value));
                         cmd.Parameters.Add(new SqlParameter("@now", DateTime.UtcNow));
+                        cmd.Parameters.Add(new SqlParameter("@cid", (object)correlationId ?? DBNull.Value));
+                        cmd.Parameters.Add(new SqlParameter("@step", stepOrder));
 
                         var session = SupermarketPOS.Business.Metadata.GenericDataService.CurrentSession;
                         cmd.Parameters.Add(new SqlParameter("@userId", (object)(session?.UserId) ?? DBNull.Value));

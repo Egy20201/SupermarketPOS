@@ -1,5 +1,6 @@
 using SupermarketPOS.Core.Entities;
 using SupermarketPOS.Core.Metadata;
+using SupermarketPOS.Core.Observability;
 using SupermarketPOS.Core.Security;
 using System;
 using System.Data.Entity;
@@ -100,6 +101,10 @@ namespace SupermarketPOS.Data
 
         // Phase 4.5: Automation Layer
         public DbSet<ScheduledJob> ScheduledJobs { get; set; }
+
+        // Phase 5: Observability
+        public DbSet<ExecutionTrace> ExecutionTraces { get; set; }
+        public DbSet<DeadLetterEvent> DeadLetterEvents { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {

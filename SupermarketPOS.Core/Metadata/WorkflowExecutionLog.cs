@@ -33,5 +33,11 @@ namespace SupermarketPOS.Core.Metadata
         public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
 
         public int? UserId { get; set; }
+
+        // Phase 5: Observability extensions
+        [MaxLength(16)]
+        public string CorrelationId { get; set; }
+
+        public int StepOrder { get; set; }
     }
 }
