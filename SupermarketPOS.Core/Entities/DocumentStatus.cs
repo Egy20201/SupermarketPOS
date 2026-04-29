@@ -17,6 +17,7 @@
         Delivered = 9,
         Accepted = 10,
         Rejected = 11,
-        Cancelled = 12
+        Cancelled = 12,
+        Pending = 13
     }
 }

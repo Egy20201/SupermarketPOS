@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using SupermarketPOS.Business.Metadata;
 using SupermarketPOS.Business.Modules;
+using SupermarketPOS.Business.Workflow;
 using SupermarketPOS.Core.Metadata;
 using SupermarketPOS.Data;
 using System;
@@ -26,6 +27,11 @@ namespace SupermarketPOS.Business
         {
             services.AddSingleton<Func<AppDbContext>>(_ => AppDbContextFactory.Create);
             services.AddSingleton<TransactionExecutor>();
+
+            // Phase 4: workflow engine — idempotency store + rule engine + action executor.
+            services.AddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
+            services.AddSingleton<WorkflowRuleEngine>();
+            services.AddSingleton<ActionExecutor>();
 
             services.AddSingleton<ApplicationStartupService>();
             services.AddSingleton<ConfigurationService>();

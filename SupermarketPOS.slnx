@@ -3,4 +3,5 @@
   <Project Path="SupermarketPOS.Core/SupermarketPOS.Core.csproj" Id="b134516b-737e-4829-a131-0938f4ccdd46" />
   <Project Path="SupermarketPOS.Data/SupermarketPOS.Data.csproj" Id="2ffa6ff1-8ea1-4577-b1ba-f0db24416761" />
   <Project Path="SupermarketPOS.UI/SupermarketPOS.UI.csproj" Id="bea3202f-f726-44a6-bd6e-d08ab36e4cd4" />
+  <Project Path="SupermarketPOS.Workflow.Tests/SupermarketPOS.Workflow.Tests.csproj" Id="f3a5b7c2-1e90-4d6c-b3cd-7e6f9a4d2e10" />
 </Solution>
