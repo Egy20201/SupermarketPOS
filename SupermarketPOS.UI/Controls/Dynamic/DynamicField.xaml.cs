@@ -63,8 +63,8 @@ namespace SupermarketPOS.UI.Controls.Dynamic
             if (field.IsRequired)
                 RequiredMarker.Visibility = Visibility.Visible;
 
-            // Read-only check
-            bool readOnly = !field.IsEditable;
+            // Read-only check (also enforce field-level write permissions)
+            bool readOnly = !field.IsEditable || !viewModel.IsFieldWritable(field.Name);
 
             // Build control
             var controlType = FieldTypeMapper.Resolve(field);

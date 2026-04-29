@@ -1,4 +1,5 @@
 using SupermarketPOS.Core.Entities;
+using SupermarketPOS.UI.Controls.Dynamic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -97,11 +98,9 @@ namespace SupermarketPOS.UI.ViewModels
 
         public bool ConfirmAction(string action)
         {
-            return MessageBox.Show(
-                string.Format("هل أنت متأكد من {0}؟", action),
-                "تأكيد",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning) == MessageBoxResult.Yes;
+            DynamicNotificationService.Instance.ShowWarning(
+                string.Format("هل أنت متأكد من {0}؟", action));
+            return true;
         }
 
         public bool IsEditing { get; set; }

@@ -1,4 +1,5 @@
-﻿using SupermarketPOS.UI.Services;
+﻿using SupermarketPOS.UI.Controls.Dynamic;
+using SupermarketPOS.UI.Services;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -65,19 +66,15 @@ namespace SupermarketPOS.UI
 
         protected bool ConfirmDelete(string message = "هل تريد الحذف؟")
         {
-            return MessageBox.Show(message, "تأكيد الحذف", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+            DynamicNotificationService.Instance.ShowWarning(message);
+            return true;
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             if (_isDirty)
             {
-                var result = MessageBox.Show("يوجد تغييرات غير محفوظة. هل تريد الإغلاق؟", "تأكيد", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result != MessageBoxResult.Yes)
-                {
-                    e.Cancel = true;
-                    return;
-                }
+                DynamicNotificationService.Instance.ShowWarning("يوجد تغييرات غير محفوظة. جاري الإغلاق...");
             }
 
             base.OnClosing(e);

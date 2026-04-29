@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace SupermarketPOS.UI.Controls.Dynamic
 {
@@ -59,12 +60,14 @@ namespace SupermarketPOS.UI.Controls.Dynamic
         /// <summary>
         /// Bind this grid to a DynamicEntityViewModel.
         /// Auto-generates columns from metadata and wires up pagination/search.
+        /// Generates action buttons from ActionDefinitions.
         /// </summary>
         public void Bind(DynamicEntityViewModel viewModel)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
 
             BuildColumns();
+            BuildActionButtons();
             WireEvents();
         }
 
@@ -147,6 +150,67 @@ namespace SupermarketPOS.UI.Controls.Dynamic
             }
 
             return binding;
+        }
+
+        // ================================================================
+        //  Action Button Generation (from ActionDefinitions)
+        // ================================================================
+
+        private readonly List<Button> _actionButtons = new List<Button>();
+
+        private void BuildActionButtons()
+        {
+            if (_viewModel.Actions == null || _viewModel.Actions.Count == 0) return;
+
+            // Find the toolbar border (first row) and add action buttons
+            var toolbarBorder = FindName("ToolbarGrid") as Grid;
+            if (toolbarBorder == null)
+            {
+                // Find the grid inside the toolbar border
+                var border = VisualTreeHelper.GetChild(this, 0) as Grid;
+                if (border == null) return;
+                var toolbarContainer = border.Children[0] as Border;
+                toolbarBorder = toolbarContainer?.Child as Grid;
+            }
+            if (toolbarBorder == null) return;
+
+            // Skip built-in Create/Save/Delete actions — they're already wired
+            var customActions = _viewModel.Actions
+                .Where(a => !string.Equals(a.Type, "Create", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(a.Type, "Save", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(a.Type, "Delete", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var action in customActions)
+            {
+                var btn = new Button
+                {
+                    Content = action.Name,
+                    Tag = action.Name,
+                    Width = 100,
+                    Height = 36,
+                    Margin = new Thickness(4, 0, 0, 0),
+                    Cursor = System.Windows.Input.Cursors.Hand,
+                    Background = new SolidColorBrush(Color.FromRgb(59, 130, 246)),
+                    Foreground = System.Windows.Media.Brushes.White,
+                    BorderThickness = new Thickness(0)
+                };
+
+                btn.Click += (s, e) =>
+                {
+                    var actionName = (s as Button)?.Tag as string;
+                    if (!string.IsNullOrEmpty(actionName))
+                        _viewModel.ExecuteActionCommand.Execute(actionName);
+                };
+
+                _actionButtons.Add(btn);
+
+                // Add to the toolbar grid
+                var colIdx = toolbarBorder.ColumnDefinitions.Count;
+                toolbarBorder.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                Grid.SetColumn(btn, colIdx);
+                toolbarBorder.Children.Add(btn);
+            }
         }
 
         // ================================================================

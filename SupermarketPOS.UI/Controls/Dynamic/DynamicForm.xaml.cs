@@ -72,9 +72,10 @@ namespace SupermarketPOS.UI.Controls.Dynamic
         {
             FieldsContainer.Children.Clear();
             _fieldControls.Clear();
+            BuildFormActionButtons();
 
-            var fieldsToShow = _viewModel.Fields
-                .Where(f => f.IsVisible)
+            // Use VisibleFields (already filtered by permissions in ViewModel)
+            var fieldsToShow = _viewModel.VisibleFields
                 .OrderBy(f => f.OrderIndex ?? int.MaxValue)
                 .Take(DynamicEntityViewModel.MaxRenderedFields)
                 .ToList();
@@ -122,6 +123,68 @@ namespace SupermarketPOS.UI.Controls.Dynamic
                 }
 
                 FieldsContainer.Children.Add(grid);
+            }
+        }
+
+        // ================================================================
+        //  Dynamic Action Buttons (from ActionDefinitions)
+        // ================================================================
+
+        private readonly List<Button> _formActionButtons = new List<Button>();
+
+        private void BuildFormActionButtons()
+        {
+            // Clear any previously added action buttons
+            foreach (var btn in _formActionButtons)
+            {
+                var parent = btn.Parent as Panel;
+                parent?.Children.Remove(btn);
+            }
+            _formActionButtons.Clear();
+
+            if (_viewModel.Actions == null || _viewModel.Actions.Count == 0) return;
+
+            // Find the action buttons grid (row 3 of the form)
+            var actionGrid = SaveButton.Parent as Grid;
+            if (actionGrid == null) return;
+
+            // Add buttons for non-standard actions (Approve, Reject, Submit, etc.)
+            var customActions = _viewModel.Actions
+                .Where(a => !string.Equals(a.Type, "Create", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(a.Type, "Save", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(a.Type, "Delete", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var action in customActions)
+            {
+                var btn = new Button
+                {
+                    Content = action.Name,
+                    Tag = action.Name,
+                    Width = 100,
+                    Height = 36,
+                    Margin = new Thickness(4, 0, 0, 0),
+                    Cursor = System.Windows.Input.Cursors.Hand,
+                    Background = new System.Windows.Media.SolidColorBrush(
+                        System.Windows.Media.Color.FromRgb(59, 130, 246)),
+                    Foreground = System.Windows.Media.Brushes.White,
+                    BorderThickness = new Thickness(0)
+                };
+
+                btn.Click += (s, e) =>
+                {
+                    var actionName = (s as Button)?.Tag as string;
+                    if (!string.IsNullOrEmpty(actionName))
+                        _viewModel.ExecuteActionCommand.Execute(actionName);
+                };
+
+                _formActionButtons.Add(btn);
+
+                // Insert before the Cancel button
+                var colIdx = actionGrid.ColumnDefinitions.Count;
+                actionGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                Grid.SetColumn(btn, colIdx);
+                actionGrid.Children.Add(btn);
             }
         }
 

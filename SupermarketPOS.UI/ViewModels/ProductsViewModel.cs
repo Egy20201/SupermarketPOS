@@ -8,6 +8,7 @@ using System.Windows.Input;
 
 namespace SupermarketPOS.UI.ViewModels
 {
+    [System.Obsolete("Phase 3: Use DynamicEntityViewModel(\"Product\") instead. This static ViewModel is deprecated.")]
     public class ProductsViewModel : BaseViewModel
     {
         private readonly ProductService _productService;
