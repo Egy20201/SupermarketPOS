@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using SupermarketPOS.Business;
 using SupermarketPOS.Core.Entities;
+using SupermarketPOS.UI.Controls.Dynamic;
 using SupermarketPOS.UI.Services;
 using SupermarketPOS.UI.Windows;
 using System;
@@ -80,17 +81,14 @@ namespace SupermarketPOS.UI
 
         private void RegisterExceptionHandlers()
         {
+            // Wire UIExceptionHandler global pipeline (no MessageBox)
+            UIExceptionHandler.WireGlobalHandlers();
+
             AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
             {
                 var ex = args.ExceptionObject as Exception;
                 Logger.Fatal(ex, "UNHANDLED DOMAIN EXCEPTION");
-                try
-                {
-                    MessageBox.Show(
-                        "حدث خطأ غير متوقع وسيتم إغلاق البرنامج.\nيرجى مراجعة ملف السجل للتفاصيل.",
-                        "خطأ حرج", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                catch { }
+                UIExceptionHandler.Handle(ex, "UnhandledDomain");
             };
 
             TaskScheduler.UnobservedTaskException += (sender, args) =>
@@ -103,13 +101,7 @@ namespace SupermarketPOS.UI
             {
                 Logger.Error(args.Exception, "UI THREAD UNHANDLED EXCEPTION");
                 args.Handled = true;
-                try
-                {
-                    MessageBox.Show(
-                        "حدث خطأ غير متوقع. يمكنك متابعة العمل.\nإذا استمرت المشكلة، أعد تشغيل البرنامج.",
-                        "خطأ", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-                catch { }
+                UIExceptionHandler.Handle(args.Exception, "UIThread");
             };
         }
     }

@@ -289,15 +289,15 @@ namespace SupermarketPOS.UI
             OpenDashboardTab();
         }
 
-        private void NavigateToCustomers_Click(object sender, RoutedEventArgs e) => OpenViewTabFromSidebar<Views.CustomersView>(sender, "sales.customers", "ط§ظ„ط¹ظ…ظ„ط§ط،");
+        private void NavigateToCustomers_Click(object sender, RoutedEventArgs e) => OpenDynamicEntityTab(sender, "Customer", "sales.customers", "ط§ظ„ط¹ظ…ظ„ط§ط،");
         private void NavigateToCustomerStatement_Click(object sender, RoutedEventArgs e) => OpenWindowTabFromSidebar(() => new CustomerStatementWindow(), sender, "sales.customerStatement", "ظƒط´ظپ ط­ط³ط§ط¨ ط¹ظ…ظٹظ„");
         private void NavigateToCustomerPayment_Click(object sender, RoutedEventArgs e) => OpenWindowTabFromSidebar(() => new CustomerPaymentWindow(), sender, "sales.customerPayment", "ط³ط¯ط§ط¯ ط¹ظ…ظٹظ„");
         private void NavigateToCustomerBalance_Click(object sender, RoutedEventArgs e) => OpenWindowTabFromSidebar(() => new CustomerBalanceWindow(), sender, "sales.customerBalance", "ط£ط±طµط¯ط© ط§ظ„ط¹ظ…ظ„ط§ط،");
         private void NavigateToSalesReturn_Click(object sender, RoutedEventArgs e) => OpenWindowTabFromSidebar(() => DependencyInjection.GetRequiredService<SalesReturnWindow>(), sender, "sales.return", "ظ…ط±طھط¬ط¹ط§طھ ط§ظ„ظ…ط¨ظٹط¹ط§طھ");
         private void NavigateToSalesReport_Click(object sender, RoutedEventArgs e) => OpenWindowTabFromSidebar(() => new SalesReportWindow(), sender, "sales.report", "طھظ‚ط±ظٹط± ط§ظ„ظ…ط¨ظٹط¹ط§طھ");
 
-        private void NavigateToProductsView_Click(object sender, RoutedEventArgs e) => OpenViewTabFromSidebar<Views.ProductsView>(sender, "inventory.products", "ط¥ط¯ط§ط±ط© ط§ظ„ظ…ظ†طھط¬ط§طھ");
-        private void NavigateToCategoriesView_Click(object sender, RoutedEventArgs e) => OpenViewTabFromSidebar<Views.CategoriesView>(sender, "inventory.categories", "ط§ظ„ظپط¦ط§طھ");
+        private void NavigateToProductsView_Click(object sender, RoutedEventArgs e) => OpenDynamicEntityTab(sender, "Product", "inventory.products", "ط¥ط¯ط§ط±ط© ط§ظ„ظ…ظ†طھط¬ط§طھ");
+        private void NavigateToCategoriesView_Click(object sender, RoutedEventArgs e) => OpenDynamicEntityTab(sender, "Category", "inventory.categories", "ط§ظ„ظپط¦ط§طھ");
         private void NavigateToUnitsView_Click(object sender, RoutedEventArgs e) => OpenViewTabFromSidebar<Views.UnitsView>(sender, "inventory.units", "ط§ظ„ظˆط­ط¯ط§طھ");
         private void NavigateToBulkEntryView_Click(object sender, RoutedEventArgs e) => OpenViewTabFromSidebar<Views.BulkEntryView>(sender, "inventory.bulkEntry", "ط¥ط¯ط®ط§ظ„ ط¬ظ…ط§ط¹ظٹ");
         private void NavigateToWarehouses_Click(object sender, RoutedEventArgs e) => OpenWindowTabFromSidebar(() => new InventoryReportWindow(), sender, "inventory.warehouses", "ط§ظ„ظ…ط®ط§ط²ظ†");
@@ -399,6 +399,17 @@ namespace SupermarketPOS.UI
             var tabKey = $"dynamic.{entityName.ToLowerInvariant()}";
             var title = entityName;
 
+            TrackSidebarButton(sender, tabKey);
+            NavService.Instance.OpenTab(tabKey, title, () =>
+            {
+                var page = new DynamicEntityPage();
+                page.Initialize(entityName);
+                return page;
+            });
+        }
+
+        private void OpenDynamicEntityTab(object sender, string entityName, string tabKey, string title)
+        {
             TrackSidebarButton(sender, tabKey);
             NavService.Instance.OpenTab(tabKey, title, () =>
             {

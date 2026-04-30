@@ -1,5 +1,6 @@
 using SupermarketPOS.Business.Metadata;
 using SupermarketPOS.Core.Metadata;
+using SupermarketPOS.UI.Services;
 using SupermarketPOS.UI.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -13,14 +14,21 @@ using System.Windows.Input;
 namespace SupermarketPOS.UI.Controls.Dynamic
 {
     /// <summary>
-    /// Phase 3 + 3.5 + 3.6: Generic ViewModel for ANY metadata-registered entity.
+    /// Phase 3 Full UI ↔ Engine Integration: Generic ViewModel for ANY metadata-registered entity.
     /// 
-    /// 3.6 Stabilization:
-    ///   - MessageBox eliminated → NotificationService (non-blocking)
-    ///   - Dispatcher.Invoke → BeginInvoke everywhere
-    ///   - CancellationToken on lookups + LoadDataAsync
-    ///   - MaxRows hard cap (1000) + paging always enforced
+    /// Replaces ALL entity-specific ViewModels (ProductsViewModel, CustomersViewModel, etc.).
+    /// Fully metadata-driven: loads EntityDefinition, Fields, FormLayout, GridLayout, Actions,
+    /// and FieldPermissions from the registry. No hardcoded screens.
+    /// 
+    /// Features:
+    ///   - Dynamic CRUD via IGenericDataService (GetAsync with lookup resolution)
+    ///   - Action buttons from ActionDefinitions + ExecuteActionAsync
+    ///   - Security: FieldPermissions (read/write) per role — hidden fields not rendered
+    ///   - FormLayout JSON → field arrangement
+    ///   - GridLayout JSON → column configuration
+    ///   - Paging always ON, MaxRows hard cap (1000)
     ///   - Global error pipeline via UIExceptionHandler
+    ///   - Non-blocking notifications (no MessageBox)
     /// </summary>
     public sealed class DynamicEntityViewModel : BaseViewModel, IDisposable
     {
@@ -37,7 +45,10 @@ namespace SupermarketPOS.UI.Controls.Dynamic
         // ================================================================
 
         private readonly IGenericDataService _dataService;
+        private readonly IMetadataService _metadataService;
         private readonly MetadataRegistryService _registry;
+        private readonly FieldPermissionService _fieldPermissions;
+        private readonly ICurrentUserService _currentUserService;
         private readonly DynamicNotificationService _notify;
 
         // Serialization lock for LoadDataAsync
@@ -56,6 +67,11 @@ namespace SupermarketPOS.UI.Controls.Dynamic
         public IReadOnlyList<FieldDefinition> Fields { get; private set; }
         public IReadOnlyList<FieldDefinition> VisibleFields { get; private set; }
         public IReadOnlyList<FieldDefinition> EditableFields { get; private set; }
+        public FormLayoutDefinition FormLayout { get; private set; }
+        public GridLayoutDefinition GridLayout { get; private set; }
+        public IReadOnlyList<ActionDefinition> Actions { get; private set; }
+        public HashSet<string> ReadableFields { get; private set; }
+        public HashSet<string> WritableFields { get; private set; }
 
         // ================================================================
         //  Grid State
@@ -249,6 +265,7 @@ namespace SupermarketPOS.UI.Controls.Dynamic
         public ICommand SortCommand { get; }
         public ICommand ConfirmYesCommand { get; }
         public ICommand ConfirmNoCommand { get; }
+        public ICommand ExecuteActionCommand { get; }
 
         // ================================================================
         //  Events
@@ -265,11 +282,17 @@ namespace SupermarketPOS.UI.Controls.Dynamic
         public DynamicEntityViewModel(
             string entityName,
             IGenericDataService dataService,
-            MetadataRegistryService registry)
+            MetadataRegistryService registry,
+            IMetadataService metadataService = null,
+            FieldPermissionService fieldPermissions = null,
+            ICurrentUserService currentUserService = null)
         {
             EntityName = entityName ?? throw new ArgumentNullException(nameof(entityName));
             _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+            _metadataService = metadataService;
+            _fieldPermissions = fieldPermissions;
+            _currentUserService = currentUserService;
             _notify = DynamicNotificationService.Instance;
 
             // Resolve metadata
@@ -278,8 +301,30 @@ namespace SupermarketPOS.UI.Controls.Dynamic
                 throw new ArgumentException($"Entity '{entityName}' not found in metadata registry.");
 
             Fields = (IReadOnlyList<FieldDefinition>)Entity.Fields;
-            VisibleFields = Fields.Where(f => f.IsVisible).Take(MaxRenderedFields).ToList();
-            EditableFields = Fields.Where(f => f.IsEditable).ToList();
+
+            // Load FormLayout, GridLayout, Actions from IMetadataService
+            if (_metadataService != null)
+            {
+                FormLayout = _metadataService.GetFormLayout(Entity.Id);
+                GridLayout = _metadataService.GetGridLayout(Entity.Id);
+                Actions = _metadataService.GetActions(Entity.Id);
+            }
+            else
+            {
+                Actions = Array.Empty<ActionDefinition>();
+            }
+
+            // Load field-level permissions for current user's role
+            LoadFieldPermissions();
+
+            // Apply security: filter visible/editable fields based on permissions
+            VisibleFields = Fields
+                .Where(f => f.IsVisible && IsFieldReadable(f.Name))
+                .Take(MaxRenderedFields)
+                .ToList();
+            EditableFields = Fields
+                .Where(f => f.IsEditable && IsFieldWritable(f.Name))
+                .ToList();
 
             // Wire commands
             LoadCommand = new RelayCommand(() => SafeExecuteAsync(() => LoadDataAsync()));
@@ -298,6 +343,103 @@ namespace SupermarketPOS.UI.Controls.Dynamic
             // Confirmation inline commands
             ConfirmYesCommand = new RelayCommand(() => ResolveConfirmation(true));
             ConfirmNoCommand = new RelayCommand(() => ResolveConfirmation(false));
+
+            // Action execution command (for metadata-defined actions)
+            ExecuteActionCommand = new RelayCommand<string>(actionName =>
+                SafeExecuteAsync(() => ExecuteMetadataActionAsync(actionName)));
+        }
+
+        // ================================================================
+        //  Security: Field Permissions
+        // ================================================================
+
+        private void LoadFieldPermissions()
+        {
+            if (_fieldPermissions == null || _currentUserService == null)
+            {
+                ReadableFields = null;
+                WritableFields = null;
+                return;
+            }
+
+            var roleId = GetCurrentRoleId();
+            ReadableFields = _fieldPermissions.GetReadableFields(Entity.Id, roleId);
+            WritableFields = _fieldPermissions.GetWritableFields(Entity.Id, roleId);
+        }
+
+        private int? GetCurrentRoleId()
+        {
+            if (_currentUserService?.CurrentUser == null) return null;
+            return _currentUserService.CurrentUser.RoleId;
+        }
+
+        public bool IsFieldReadable(string fieldName)
+        {
+            if (ReadableFields == null) return true;
+            return ReadableFields.Contains(fieldName);
+        }
+
+        public bool IsFieldWritable(string fieldName)
+        {
+            if (WritableFields == null) return true;
+            return WritableFields.Contains(fieldName);
+        }
+
+        // ================================================================
+        //  Action Engine (metadata-defined actions)
+        // ================================================================
+
+        public async Task ExecuteMetadataActionAsync(string actionName)
+        {
+            if (string.IsNullOrWhiteSpace(actionName)) return;
+
+            IsBusy = true;
+            StatusMessage = $"جاري تنفيذ {actionName}...";
+
+            try
+            {
+                var token = _masterCts.Token;
+
+                // Collect form data for the action
+                var data = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                if (IsEditing)
+                {
+                    foreach (var field in EditableFields)
+                    {
+                        if (FormData.TryGetValue(field.Name, out var value))
+                            data[field.Name] = value;
+                    }
+                    if (EditingId.HasValue)
+                        data["Id"] = EditingId.Value;
+                }
+                else if (SelectedItem != null)
+                {
+                    foreach (var kvp in SelectedItem)
+                        data[kvp.Key] = kvp.Value;
+                }
+
+                var result = await _dataService.ExecuteActionAsync(EntityName, actionName, data)
+                    .ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+
+                BeginInvoke(() =>
+                {
+                    StatusMessage = $"تم تنفيذ {actionName} بنجاح";
+                    _notify.ShowSuccess(StatusMessage);
+                    CloseForm();
+                });
+                await LoadDataAsync().ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                UIExceptionHandler.Handle(ex, $"Action:{actionName}:{EntityName}");
+                BeginInvoke(() => StatusMessage = $"خطأ في تنفيذ {actionName}: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
         /// <summary>
@@ -366,21 +508,28 @@ namespace SupermarketPOS.UI.Controls.Dynamic
                 // Enforce MaxRowsCap on PageSize
                 var effectivePageSize = Math.Min(PageSize, MaxRowsCap);
 
-                var request = new QueryRequest
+                // Use GetAsync with QueryOptions for automatic lookup resolution
+                var options = new QueryOptions
                 {
-                    Filters = BuildSearchFilters(),
-                    SortBy = new List<SortField>
-                    {
-                        new SortField { FieldName = SortField, Descending = SortDescending }
-                    },
-                    Limit = effectivePageSize,
-                    Offset = (CurrentPage - 1) * effectivePageSize
+                    Filters = BuildSearchFieldFilters(),
+                    SortField = SortField,
+                    SortDescending = SortDescending,
+                    Page = CurrentPage,
+                    PageSize = effectivePageSize,
+                    ResolveLookups = true
                 };
 
-                var results = await _dataService.QueryAsync(EntityName, request).ConfigureAwait(false);
+                var results = await _dataService.GetAsync(EntityName, options).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
 
-                // Count query
+                // Apply field-level read permissions — strip non-readable fields
+                if (_fieldPermissions != null && _currentUserService != null)
+                {
+                    _fieldPermissions.FilterReadableRows(
+                        Entity.Id, GetCurrentRoleId(), results);
+                }
+
+                // Count query for pagination
                 var countReq = new QueryRequest
                 {
                     Filters = BuildSearchFilters(),
@@ -528,9 +677,16 @@ namespace SupermarketPOS.UI.Controls.Dynamic
                         data[field.Name] = value;
                 }
 
+                // Apply field-level write permissions
+                if (_fieldPermissions != null && _currentUserService != null)
+                {
+                    data = _fieldPermissions.FilterWritableData(
+                        Entity.Id, GetCurrentRoleId(), data);
+                }
+
                 if (IsNewRecord)
                 {
-                    var newId = await _dataService.InsertAsync(EntityName, data).ConfigureAwait(false);
+                    var newId = await _dataService.CreateAsync(EntityName, data).ConfigureAwait(false);
                     token.ThrowIfCancellationRequested();
                     BeginInvoke(() =>
                     {
@@ -751,6 +907,27 @@ namespace SupermarketPOS.UI.Controls.Dynamic
                 filters.Add(new FilterCondition
                 {
                     FieldName = stringField.Name,
+                    Operator = "contains",
+                    Value = SearchText.Trim()
+                });
+            }
+
+            return filters;
+        }
+
+        private List<FieldFilter> BuildSearchFieldFilters()
+        {
+            var filters = new List<FieldFilter>();
+            if (string.IsNullOrWhiteSpace(SearchText)) return filters;
+
+            var stringField = VisibleFields.FirstOrDefault(f =>
+                f.DataType?.Equals("string", StringComparison.OrdinalIgnoreCase) == true);
+
+            if (stringField != null)
+            {
+                filters.Add(new FieldFilter
+                {
+                    Field = stringField.Name,
                     Operator = "contains",
                     Value = SearchText.Trim()
                 });

@@ -1,6 +1,7 @@
 using SupermarketPOS.Business.Metadata;
 using SupermarketPOS.Core.Metadata;
 using SupermarketPOS.UI.Infrastructure;
+using SupermarketPOS.UI.Services;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -50,8 +51,13 @@ namespace SupermarketPOS.UI.Controls.Dynamic
 
             var dataService = DependencyInjection.GetRequiredService<IGenericDataService>();
             var registry = DependencyInjection.GetRequiredService<MetadataRegistryService>();
+            var metadataService = DependencyInjection.GetService<IMetadataService>();
+            var fieldPermissions = DependencyInjection.GetService<FieldPermissionService>();
+            var currentUserService = DependencyInjection.GetService<ICurrentUserService>();
 
-            _viewModel = new DynamicEntityViewModel(entityName, dataService, registry);
+            _viewModel = new DynamicEntityViewModel(
+                entityName, dataService, registry,
+                metadataService, fieldPermissions, currentUserService);
 
             // Bind grid and form
             EntityGrid.Bind(_viewModel);
