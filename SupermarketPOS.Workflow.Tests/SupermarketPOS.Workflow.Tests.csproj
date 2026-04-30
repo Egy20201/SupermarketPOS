@@ -9,7 +9,7 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <NoWarn>$(NoWarn);CS8002;NETSDK1138</NoWarn>
+    <NoWarn>$(NoWarn);CS8002;NETSDK1138;xUnit1031</NoWarn>
   </PropertyGroup>
 
   <!--
@@ -22,6 +22,15 @@
   <ItemGroup>
     <Compile Include="..\SupermarketPOS.Business\Workflow\**\*.cs">
       <Link>Workflow\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </Compile>
+    <!--
+      Phase 5: framework-agnostic posting helpers. We exclude the EF-bound
+      FiscalPeriodLockChecker (it needs SupermarketPOS.Data which is net48-only)
+      while still compiling the pure-logic helpers under test.
+    -->
+    <Compile Include="..\SupermarketPOS.Business\Posting\**\*.cs"
+             Exclude="..\SupermarketPOS.Business\Posting\IFiscalPeriodLockChecker.cs">
+      <Link>Posting\%(RecursiveDir)%(FileName)%(Extension)</Link>
     </Compile>
     <Compile Include="..\SupermarketPOS.Core\Entities\DocumentStatus.cs">
       <Link>Entities\DocumentStatus.cs</Link>
