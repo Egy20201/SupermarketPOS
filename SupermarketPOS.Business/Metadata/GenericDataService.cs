@@ -1,5 +1,8 @@
 using Newtonsoft.Json;
+using SupermarketPOS.Business.Observability;
+using SupermarketPOS.Business.Workflow;
 using SupermarketPOS.Core.Metadata;
+using SupermarketPOS.Core.Observability;
 using SupermarketPOS.Data;
 using System;
 using System.Collections.Concurrent;
@@ -68,6 +71,9 @@ namespace SupermarketPOS.Business.Metadata
         private readonly AuditService _auditService;
         private readonly FieldPermissionService _fieldPermissions;
         private readonly IActionHandler[] _actionHandlers;
+        private WorkflowEngine _workflowEngine;
+        private TracingService _tracingService;
+        private MetricsService _metricsService;
 
         // Local metadata cache — avoids repeated registry lookups per entity
         private readonly ConcurrentDictionary<string, ResolvedMetadata> _cache =
@@ -107,6 +113,40 @@ namespace SupermarketPOS.Business.Metadata
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
             _fieldPermissions = fieldPermissions ?? throw new ArgumentNullException(nameof(fieldPermissions));
             _actionHandlers = actionHandlers?.ToArray() ?? Array.Empty<IActionHandler>();
+        }
+
+        /// <summary>
+        /// Phase 4: Inject the workflow engine after construction (avoids circular dependency).
+        /// </summary>
+        public void SetWorkflowEngine(WorkflowEngine engine)
+        {
+            _workflowEngine = engine;
+        }
+
+        /// <summary>
+        /// Phase 5: Inject observability services after construction.
+        /// </summary>
+        public void SetObservability(TracingService tracing, MetricsService metrics)
+        {
+            _tracingService = tracing;
+            _metricsService = metrics;
+        }
+
+        private async Task TriggerWorkflowsAsync(string entityName, string trigger, int? entityId, Dictionary<string, object> data)
+        {
+            if (_workflowEngine == null) return;
+            try
+            {
+                await _workflowEngine.ExecuteAsync(entityName, trigger, entityId, data).ConfigureAwait(false);
+            }
+            catch (ValidationException)
+            {
+                throw; // Block actions must propagate
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"[GenericData] Workflow execution failed for {trigger} on {entityName}: {ex.Message}");
+            }
         }
 
         // ================================================================
@@ -306,36 +346,43 @@ namespace SupermarketPOS.Business.Metadata
             if (string.IsNullOrWhiteSpace(entityName))
                 throw new ArgumentException("Entity name is required.", nameof(entityName));
 
-            data = data ?? new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            var meta = ResolveCached(entityName);
-            var session = CurrentSession;
+            CorrelationContext.EnsureCorrelationId();
+            var trace = _tracingService?.BeginTrace(entityName, "Create", CurrentSession?.UserId);
 
-            // Step 3: Strip computed fields
-            StripComputedFields(meta.AllFields, data);
+            try
+            {
+                data = data ?? new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                var meta = ResolveCached(entityName);
+                var session = CurrentSession;
 
-            // Step 1: Filter writable fields based on role permissions
-            data = _fieldPermissions.FilterWritableData(meta.Entity.Id, session?.RoleId, data);
+                StripComputedFields(meta.AllFields, data);
+                data = _fieldPermissions.FilterWritableData(meta.Entity.Id, session?.RoleId, data);
+                DefaultValueResolver.ApplyDefaults(meta.AllFields, data);
 
-            // Step 1: Apply default values from metadata
-            DefaultValueResolver.ApplyDefaults(meta.AllFields, data);
+                var errors = _validator.Validate(entityName, data, isUpdate: false);
+                if (errors.Count > 0)
+                    throw new ValidationException(entityName, errors);
 
-            // Step 2: Validate via metadata rules (Required, MaxLength, DataType)
-            var errors = _validator.Validate(entityName, data, isUpdate: false);
-            if (errors.Count > 0)
-                throw new ValidationException(entityName, errors);
+                StructuredLogger.Debug(entityName, "Create", $"{data.Count} field(s)");
 
-            Logger.Debug($"[GenericData] CREATE {meta.Entity.Name} ({data.Count} field(s))");
+                int newId = await ExecuteInsertAsync(meta, data).ConfigureAwait(false);
 
-            int newId = await ExecuteInsertAsync(meta, data).ConfigureAwait(false);
+                LogAudit("Create", entityName, newId, null, data);
+                PublishDomainEvent("MetadataEntityCreated", entityName, newId, data);
+                await TriggerWorkflowsAsync(entityName, "OnCreate", newId, data).ConfigureAwait(false);
 
-            // Step 2: Audit trail — log the create
-            LogAudit("Create", entityName, newId, null, data);
-
-            // Step 7: Publish domain event
-            PublishDomainEvent("MetadataEntityCreated", entityName, newId, data);
-
-            Logger.Debug($"[GenericData] CREATE {meta.Entity.Name}: Id={newId}");
-            return newId;
+                trace?.Complete();
+                _metricsService?.RecordOperation(entityName, "Create", trace?.ElapsedMs ?? 0, true);
+                StructuredLogger.OperationComplete(entityName, "Create", trace?.ElapsedMs ?? 0, true, $"Id={newId}");
+                return newId;
+            }
+            catch (Exception ex)
+            {
+                trace?.Fail(ex);
+                _metricsService?.RecordOperation(entityName, "Create", trace?.ElapsedMs ?? 0, false);
+                StructuredLogger.Error(entityName, "Create", "Failed", ex);
+                throw;
+            }
         }
 
         // ================================================================
@@ -351,67 +398,66 @@ namespace SupermarketPOS.Business.Metadata
             if (data == null || data.Count == 0)
                 throw new ArgumentException("Data is required for update.", nameof(data));
 
-            var meta = ResolveCached(entityName);
-            var session = CurrentSession;
+            CorrelationContext.EnsureCorrelationId();
+            var trace = _tracingService?.BeginTrace(entityName, "Update", CurrentSession?.UserId);
 
-            // Step 3: Strip computed fields
-            StripComputedFields(meta.AllFields, data);
-
-            // Step 1: Filter writable fields based on role permissions
-            data = _fieldPermissions.FilterWritableData(meta.Entity.Id, session?.RoleId, data);
-
-            if (data.Count == 0 || (data.Count == 1 && data.ContainsKey("Id")))
-                throw new ArgumentException("No writable fields provided for update.");
-
-            // Validate via metadata rules (update mode: only provided fields checked)
-            var errors = _validator.Validate(entityName, data, isUpdate: true);
-            if (errors.Count > 0)
-                throw new ValidationException(entityName, errors);
-
-            ValidateUpdateData(meta.AllFields, data);
-
-            // Step 2: Fetch old values for audit trail (only changed fields)
-            Dictionary<string, object> oldValues = null;
             try
             {
-                oldValues = await FetchRowAsync(meta, id, data.Keys.ToList()).ConfigureAwait(false);
+                var meta = ResolveCached(entityName);
+                var session = CurrentSession;
+
+                StripComputedFields(meta.AllFields, data);
+                data = _fieldPermissions.FilterWritableData(meta.Entity.Id, session?.RoleId, data);
+
+                if (data.Count == 0 || (data.Count == 1 && data.ContainsKey("Id")))
+                    throw new ArgumentException("No writable fields provided for update.");
+
+                var errors = _validator.Validate(entityName, data, isUpdate: true);
+                if (errors.Count > 0)
+                    throw new ValidationException(entityName, errors);
+
+                ValidateUpdateData(meta.AllFields, data);
+
+                Dictionary<string, object> oldValues = null;
+                try { oldValues = await FetchRowAsync(meta, id, data.Keys.ToList()).ConfigureAwait(false); }
+                catch (Exception ex) { StructuredLogger.Warning(entityName, "Update", $"Could not fetch old values: {ex.Message}"); }
+
+                StructuredLogger.Debug(entityName, "Update", $"Id={id} ({data.Count} field(s))");
+
+                int rowsAffected = await WithConnectionAsync(meta.Entity.Name, "UPDATE",
+                    async (conn, tx) =>
+                    {
+                        var (sql, parameters) = SqlQueryBuilder.BuildUpdate(
+                            meta.Entity, meta.EditableFields, id, data);
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            if (tx != null) cmd.Transaction = tx;
+                            cmd.CommandText = sql;
+                            cmd.CommandTimeout = CommandTimeoutSeconds;
+                            foreach (var p in parameters) cmd.Parameters.Add(p);
+                            return await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                        }
+                    }).ConfigureAwait(false);
+
+                if (rowsAffected == 0)
+                    throw new InvalidOperationException($"'{meta.Entity.Name}' with Id={id} not found.");
+
+                LogAudit("Update", entityName, id, oldValues, data);
+                PublishDomainEvent("MetadataEntityUpdated", entityName, id, data);
+                await TriggerWorkflowsAsync(entityName, "OnUpdate", id, data).ConfigureAwait(false);
+
+                trace?.Complete();
+                _metricsService?.RecordOperation(entityName, "Update", trace?.ElapsedMs ?? 0, true);
+                StructuredLogger.OperationComplete(entityName, "Update", trace?.ElapsedMs ?? 0, true, $"Id={id}");
+                return rowsAffected;
             }
             catch (Exception ex)
             {
-                Logger.Warning($"[GenericData] Could not fetch old values for audit: {ex.Message}");
+                trace?.Fail(ex);
+                _metricsService?.RecordOperation(entityName, "Update", trace?.ElapsedMs ?? 0, false);
+                StructuredLogger.Error(entityName, "Update", $"Id={id} failed", ex);
+                throw;
             }
-
-            Logger.Debug($"[GenericData] UPDATE {meta.Entity.Name} Id={id} ({data.Count} field(s))");
-
-            int rowsAffected = await WithConnectionAsync(meta.Entity.Name, "UPDATE",
-                async (conn, tx) =>
-                {
-                    var (sql, parameters) = SqlQueryBuilder.BuildUpdate(
-                        meta.Entity, meta.EditableFields, id, data);
-
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        if (tx != null) cmd.Transaction = tx;
-                        cmd.CommandText = sql;
-                        cmd.CommandTimeout = CommandTimeoutSeconds;
-                        foreach (var p in parameters) cmd.Parameters.Add(p);
-
-                        return await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-                    }
-                }).ConfigureAwait(false);
-
-            if (rowsAffected == 0)
-                throw new InvalidOperationException(
-                    $"'{meta.Entity.Name}' with Id={id} not found.");
-
-            // Step 2: Audit trail — log the update with old/new values
-            LogAudit("Update", entityName, id, oldValues, data);
-
-            // Step 7: Publish domain event
-            PublishDomainEvent("MetadataEntityUpdated", entityName, id, data);
-
-            Logger.Debug($"[GenericData] UPDATE {meta.Entity.Name} Id={id}: {rowsAffected} row(s)");
-            return rowsAffected;
         }
 
         // ================================================================
@@ -425,49 +471,52 @@ namespace SupermarketPOS.Business.Metadata
             if (id <= 0)
                 throw new ArgumentException("Valid Id is required for delete.", nameof(id));
 
-            var meta = ResolveCached(entityName);
+            CorrelationContext.EnsureCorrelationId();
+            var trace = _tracingService?.BeginTrace(entityName, "Delete", CurrentSession?.UserId);
 
-            // Step 2: Fetch old values for audit trail before deletion
-            Dictionary<string, object> oldValues = null;
             try
             {
-                oldValues = await FetchRowAsync(meta, id, null).ConfigureAwait(false);
+                var meta = ResolveCached(entityName);
+
+                Dictionary<string, object> oldValues = null;
+                try { oldValues = await FetchRowAsync(meta, id, null).ConfigureAwait(false); }
+                catch (Exception ex) { StructuredLogger.Warning(entityName, "Delete", $"Could not fetch old values: {ex.Message}"); }
+
+                StructuredLogger.Debug(entityName, "Delete", $"Id={id}");
+
+                int rowsAffected = await WithConnectionAsync(meta.Entity.Name, "DELETE",
+                    async (conn, tx) =>
+                    {
+                        var (sql, parameters) = SqlQueryBuilder.BuildDelete(meta.Entity, id);
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            if (tx != null) cmd.Transaction = tx;
+                            cmd.CommandText = sql;
+                            cmd.CommandTimeout = CommandTimeoutSeconds;
+                            foreach (var p in parameters) cmd.Parameters.Add(p);
+                            return await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+                        }
+                    }).ConfigureAwait(false);
+
+                if (rowsAffected == 0)
+                    throw new InvalidOperationException($"'{meta.Entity.Name}' with Id={id} not found.");
+
+                LogAudit("Delete", entityName, id, oldValues, null);
+                PublishDomainEvent("MetadataEntityDeleted", entityName, id, oldValues);
+                await TriggerWorkflowsAsync(entityName, "OnDelete", id, oldValues as Dictionary<string, object>).ConfigureAwait(false);
+
+                trace?.Complete();
+                _metricsService?.RecordOperation(entityName, "Delete", trace?.ElapsedMs ?? 0, true);
+                StructuredLogger.OperationComplete(entityName, "Delete", trace?.ElapsedMs ?? 0, true, $"Id={id}");
+                return rowsAffected;
             }
             catch (Exception ex)
             {
-                Logger.Warning($"[GenericData] Could not fetch old values for audit: {ex.Message}");
+                trace?.Fail(ex);
+                _metricsService?.RecordOperation(entityName, "Delete", trace?.ElapsedMs ?? 0, false);
+                StructuredLogger.Error(entityName, "Delete", $"Id={id} failed", ex);
+                throw;
             }
-
-            Logger.Debug($"[GenericData] DELETE {meta.Entity.Name} Id={id}");
-
-            int rowsAffected = await WithConnectionAsync(meta.Entity.Name, "DELETE",
-                async (conn, tx) =>
-                {
-                    var (sql, parameters) = SqlQueryBuilder.BuildDelete(meta.Entity, id);
-
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        if (tx != null) cmd.Transaction = tx;
-                        cmd.CommandText = sql;
-                        cmd.CommandTimeout = CommandTimeoutSeconds;
-                        foreach (var p in parameters) cmd.Parameters.Add(p);
-
-                        return await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-                    }
-                }).ConfigureAwait(false);
-
-            if (rowsAffected == 0)
-                throw new InvalidOperationException(
-                    $"'{meta.Entity.Name}' with Id={id} not found.");
-
-            // Step 2: Audit trail — log the delete with old values
-            LogAudit("Delete", entityName, id, oldValues, null);
-
-            // Step 7: Publish domain event
-            PublishDomainEvent("MetadataEntityDeleted", entityName, id, oldValues);
-
-            Logger.Debug($"[GenericData] DELETE {meta.Entity.Name} Id={id}: done");
-            return rowsAffected;
         }
 
         // ================================================================
@@ -506,21 +555,25 @@ namespace SupermarketPOS.Business.Metadata
             var handler = _actionHandlers.FirstOrDefault(h =>
                 h.CanHandle(entityName, action.Type));
 
+            object result;
+
             if (handler != null)
             {
                 Logger.Debug($"[GenericData] ACTION {entityName}.{actionName}: " +
                             $"using handler {handler.GetType().Name}");
 
-                return await ExecuteInTransactionAsync(async svc =>
+                result = await ExecuteInTransactionAsync(async svc =>
                 {
                     return await handler.HandleAsync(
                         entityName, action, data ?? new Dictionary<string, object>(),
                         svc, CancellationToken.None).ConfigureAwait(false);
                 }).ConfigureAwait(false);
             }
+            else
+            {
 
             // Built-in dispatch based on action type — all inside a transaction
-            return await ExecuteInTransactionAsync(async svc =>
+            result = await ExecuteInTransactionAsync(async svc =>
             {
                 switch (action.Type?.ToLowerInvariant())
                 {
@@ -573,6 +626,15 @@ namespace SupermarketPOS.Business.Metadata
                             $"Unknown action type '{action.Type}' for action '{actionName}'.");
                 }
             }).ConfigureAwait(false);
+            }
+
+            // Phase 4: Trigger OnAction workflows
+            int? actionEntityId = null;
+            if (data != null && data.TryGetValue("Id", out var actionIdVal) && actionIdVal != null)
+                actionEntityId = Convert.ToInt32(actionIdVal);
+            await TriggerWorkflowsAsync(entityName, "OnAction", actionEntityId, data).ConfigureAwait(false);
+
+            return result;
         }
 
         // ================================================================

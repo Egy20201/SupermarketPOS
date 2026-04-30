@@ -1,5 +1,6 @@
 using SupermarketPOS.Core.Entities;
 using SupermarketPOS.Core.Metadata;
+using SupermarketPOS.Core.Observability;
 using SupermarketPOS.Core.Security;
 using System;
 using System.Data.Entity;
@@ -91,6 +92,19 @@ namespace SupermarketPOS.Data
 
         // Phase 2.5: Enterprise Hardening
         public DbSet<FieldPermission> FieldPermissions { get; set; }
+
+        // Phase 4: Workflow Engine
+        public DbSet<WorkflowDefinition> WorkflowDefinitions { get; set; }
+        public DbSet<WorkflowRule> WorkflowRules { get; set; }
+        public DbSet<WorkflowAction> WorkflowActions { get; set; }
+        public DbSet<WorkflowExecutionLog> WorkflowExecutionLogs { get; set; }
+
+        // Phase 4.5: Automation Layer
+        public DbSet<ScheduledJob> ScheduledJobs { get; set; }
+
+        // Phase 5: Observability
+        public DbSet<ExecutionTrace> ExecutionTraces { get; set; }
+        public DbSet<DeadLetterEvent> DeadLetterEvents { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -314,6 +328,23 @@ namespace SupermarketPOS.Data
 
             // Phase 2.5: Entity MaxRows
             modelBuilder.Entity<EntityDefinition>().Property(e => e.MaxRows).IsOptional();
+
+            // Phase 4: Workflow Engine
+            modelBuilder.Entity<WorkflowDefinition>()
+                .HasRequired(w => w.Entity)
+                .WithMany()
+                .HasForeignKey(w => w.EntityId)
+                .WillCascadeOnDelete(false);
+            modelBuilder.Entity<WorkflowRule>()
+                .HasRequired(r => r.Workflow)
+                .WithMany(w => w.Rules)
+                .HasForeignKey(r => r.WorkflowId)
+                .WillCascadeOnDelete(true);
+            modelBuilder.Entity<WorkflowAction>()
+                .HasRequired(a => a.Rule)
+                .WithMany(r => r.Actions)
+                .HasForeignKey(a => a.RuleId)
+                .WillCascadeOnDelete(true);
         }
 
         public static void SeedData()
