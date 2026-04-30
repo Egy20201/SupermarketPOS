@@ -9,20 +9,82 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <NoWarn>$(NoWarn);CS8002;NETSDK1138</NoWarn>
+    <NoWarn>$(NoWarn);CS8002;NETSDK1138;xUnit1031</NoWarn>
   </PropertyGroup>
 
   <!--
     The production projects target net48 (WPF + EF6). To exercise the
-    framework-agnostic Workflow/ code on Linux CI we re-compile only those
-    source files into this net8.0 test assembly via <Compile Link="..." />.
-    No reference to the net48 SupermarketPOS.Business assembly is needed,
-    which keeps the tests cross-platform.
+    framework-agnostic Workflow/ + Posting/ helpers on Linux CI we re-compile
+    only those specific source files into this net8.0 test assembly via
+    <Compile Link="..." />.
+
+    NOTE: We deliberately list every file by hand instead of using a glob.
+    Other files may live under SupermarketPOS.Business\Workflow\ that depend on
+    EF / WPF / Data, and those would not compile under net8.0. Adding a new
+    framework-agnostic helper? Add it to this list explicitly.
   -->
   <ItemGroup>
-    <Compile Include="..\SupermarketPOS.Business\Workflow\**\*.cs">
-      <Link>Workflow\%(RecursiveDir)%(FileName)%(Extension)</Link>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\ActionExecutor.cs">
+      <Link>Workflow\ActionExecutor.cs</Link>
     </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\Conditions.cs">
+      <Link>Workflow\Conditions.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\DocumentStateMachine.cs">
+      <Link>Workflow\DocumentStateMachine.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\FieldChange.cs">
+      <Link>Workflow\FieldChange.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\IIdempotencyStore.cs">
+      <Link>Workflow\IIdempotencyStore.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\IWorkflowAction.cs">
+      <Link>Workflow\IWorkflowAction.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\IWorkflowRule.cs">
+      <Link>Workflow\IWorkflowRule.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\RuleResult.cs">
+      <Link>Workflow\RuleResult.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\StateMachine.cs">
+      <Link>Workflow\StateMachine.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\WorkflowContext.cs">
+      <Link>Workflow\WorkflowContext.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\WorkflowDefinitionCache.cs">
+      <Link>Workflow\WorkflowDefinitionCache.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Workflow\WorkflowRuleEngine.cs">
+      <Link>Workflow\WorkflowRuleEngine.cs</Link>
+    </Compile>
+
+    <!--
+      Phase 5: framework-agnostic posting helpers. We exclude the EF-bound
+      FiscalPeriodLockChecker (it needs SupermarketPOS.Data which is net48-only)
+      while still compiling the pure-logic helpers under test.
+    -->
+    <Compile Include="..\SupermarketPOS.Business\Posting\AccountingPeriodLock.cs">
+      <Link>Posting\AccountingPeriodLock.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Posting\JournalBalance.cs">
+      <Link>Posting\JournalBalance.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Posting\PostedDocumentGuard.cs">
+      <Link>Posting\PostedDocumentGuard.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Posting\PriceIntegrity.cs">
+      <Link>Posting\PriceIntegrity.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Posting\ReturnQuantityGuard.cs">
+      <Link>Posting\ReturnQuantityGuard.cs</Link>
+    </Compile>
+    <Compile Include="..\SupermarketPOS.Business\Posting\UnitConversion.cs">
+      <Link>Posting\UnitConversion.cs</Link>
+    </Compile>
+
     <Compile Include="..\SupermarketPOS.Core\Entities\DocumentStatus.cs">
       <Link>Entities\DocumentStatus.cs</Link>
     </Compile>

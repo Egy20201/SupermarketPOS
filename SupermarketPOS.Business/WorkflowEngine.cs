@@ -11,7 +11,12 @@ namespace SupermarketPOS.Business
     /// Backed by the generic <see cref="StateMachine{TState}"/>; see
     /// <see cref="DocumentStateMachine"/> for the canonical transition table.
     /// </summary>
-    public static class WorkflowEngine
+    /// <remarks>
+    /// Methods remain static so existing call sites (<c>WorkflowEngine.Transition(...)</c>)
+    /// keep compiling unchanged, but the surrounding type is non-static so it can
+    /// also be injected as a constructor dependency by services that prefer DI.
+    /// </remarks>
+    public class WorkflowEngine
     {
         private static readonly StateMachine<DocumentStatus> _machine = DocumentStateMachine.Instance;
 

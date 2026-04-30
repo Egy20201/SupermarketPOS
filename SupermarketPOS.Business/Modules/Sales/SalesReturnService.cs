@@ -1,5 +1,6 @@
 using SupermarketPOS.Core.Entities;
 using SupermarketPOS.Data;
+using SupermarketPOS.Business.Posting;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -12,12 +13,14 @@ namespace SupermarketPOS.Business.Modules
         private readonly Func<AppDbContext> _dbFactory;
         private readonly IInventoryMovementService _inventoryService;
         private readonly TransactionExecutor _transactionExecutor;
+        private readonly IFiscalPeriodLockChecker _periodLock;
 
-        public SalesReturnService(Func<AppDbContext> dbFactory, IInventoryMovementService inventoryService, TransactionExecutor transactionExecutor)
+        public SalesReturnService(Func<AppDbContext> dbFactory, IInventoryMovementService inventoryService, TransactionExecutor transactionExecutor, IFiscalPeriodLockChecker periodLock = null)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService));
             _transactionExecutor = transactionExecutor ?? throw new ArgumentNullException(nameof(transactionExecutor));
+            _periodLock = periodLock;
         }
 
         public List<SaleInvoice> GetRecentInvoices(int limit)
@@ -76,6 +79,7 @@ namespace SupermarketPOS.Business.Modules
             {
                 var invoice = db.SaleInvoices.Find(invoiceId);
                 if (invoice == null) throw new InvalidOperationException("الفاتورة غير موجودة");
+                if (_periodLock != null) _periodLock.EnsureUnlocked(DateTime.Now);
                 var reference = string.Format("RET-{0}-{1:yyyyMMddHHmmss}", invoice.InvoiceNumber, DateTime.Now);
                 var total = returnItems.Sum(i => i.ReturnQuantity * i.UnitPrice);
                 ValidateReturnQuantities(db, invoice, returnItems);
@@ -111,8 +115,7 @@ namespace SupermarketPOS.Business.Modules
                     .Where(m => m.ProductId == item.ProductId && m.MovementType == "مرتجع مبيعات" && m.Reference.StartsWith("RET-" + invoice.InvoiceNumber + "-"))
                     .Sum(m => (int?)m.QuantityIn) ?? 0;
 
-                if (item.ReturnQuantity + priorReturned > soldQuantity)
-                    throw new InvalidOperationException("كمية المرتجع أكبر من الكمية المباعة: " + item.ProductName);
+                ReturnQuantityGuard.EnsureAllowed(soldQuantity, priorReturned, item.ReturnQuantity, item.ProductName);
             }
         }
 
@@ -134,6 +137,7 @@ namespace SupermarketPOS.Business.Modules
             db.JournalEntries.Add(journal);
             db.JournalEntryLines.Add(new JournalEntryLine { JournalEntry = journal, Account = revenueAccount, Description = "Reverse sales revenue", Debit = total, Credit = 0m });
             db.JournalEntryLines.Add(new JournalEntryLine { JournalEntry = journal, Account = debitAccount, Description = invoice.CustomerId.HasValue ? "Reverse customer receivable" : "Reverse cash sale", Debit = 0m, Credit = total });
+            JournalBalance.EnsureBalanced(new[] { new JournalBalance.Line(total, 0m), new JournalBalance.Line(0m, total) });
         }
 
         private static Account GetOrCreateAccount(AppDbContext db, string code, string name, string accountType)

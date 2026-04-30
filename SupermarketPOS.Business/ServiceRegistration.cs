@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using SupermarketPOS.Business.Metadata;
 using SupermarketPOS.Business.Modules;
+using SupermarketPOS.Business.Posting;
 using SupermarketPOS.Business.Workflow;
 using SupermarketPOS.Core.Metadata;
 using SupermarketPOS.Data;
@@ -27,6 +28,16 @@ namespace SupermarketPOS.Business
         {
             services.AddSingleton<Func<AppDbContext>>(_ => AppDbContextFactory.Create);
             services.AddSingleton<TransactionExecutor>();
+
+            // Workflow + metrics façades — kept as singletons so consumers
+            // can either call the static helpers (back-compat) or inject the
+            // class (preferred for new code).
+            services.AddSingleton<WorkflowEngine>();
+            services.AddSingleton<MetricsService>();
+
+            // Phase 5: accounting period lock checker — guards every posting flow
+            // against writes into closed fiscal periods.
+            services.AddSingleton<IFiscalPeriodLockChecker, FiscalPeriodLockChecker>();
 
             // Phase 4: workflow engine — idempotency store + rule engine + action executor.
             services.AddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
