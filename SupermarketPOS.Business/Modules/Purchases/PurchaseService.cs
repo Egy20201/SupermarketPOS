@@ -1,5 +1,6 @@
 using SupermarketPOS.Core.Entities;
 using SupermarketPOS.Data;
+using SupermarketPOS.Business.Posting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,8 +20,9 @@ namespace SupermarketPOS.Business
         private readonly AuditService _auditService;
         private readonly SettingsService _settingsService;
         private readonly TransactionExecutor _transactionExecutor;
+        private readonly IFiscalPeriodLockChecker _periodLock;
 
-        public PurchaseService(Func<AppDbContext> dbFactory, IInventoryMovementService inventoryService, AuthorizationService authzService, AuditService auditService, SettingsService settingsService, TransactionExecutor transactionExecutor)
+        public PurchaseService(Func<AppDbContext> dbFactory, IInventoryMovementService inventoryService, AuthorizationService authzService, AuditService auditService, SettingsService settingsService, TransactionExecutor transactionExecutor, IFiscalPeriodLockChecker periodLock = null)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService));
@@ -28,6 +30,7 @@ namespace SupermarketPOS.Business
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
             _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
             _transactionExecutor = transactionExecutor ?? throw new ArgumentNullException(nameof(transactionExecutor));
+            _periodLock = periodLock;
         }
 
         public List<PurchaseProductDto> GetActiveProducts(int? branchId = null, string userRole = null) { using (var db = _dbFactory()) { var query = db.Products.Where(p => p.IsActive).AsQueryable(); if (userRole != "Admin" && branchId.HasValue) query = query.Where(p => p.BranchId == null || p.BranchId == branchId.Value); return query.OrderBy(p => p.Name).Select(p => new PurchaseProductDto { Id = p.Id, Barcode = p.Barcode, Name = p.Name, PurchasePrice = p.PurchasePrice }).ToList(); } }
@@ -42,6 +45,9 @@ namespace SupermarketPOS.Business
             if (!_authzService.HasPermission(request.UserId, "purchases.create", branchId)) return Fail("غير مصرح لك بإنشاء فواتير الشراء في هذا الفرع");
             try
             {
+                if (_periodLock != null && _periodLock.IsLocked(request.Date)) return Fail("لا يمكن الترحيل إلى فترة محاسبية مُقفلة");
+                var priceError = ValidatePricing(request);
+                if (priceError != null) return Fail(priceError);
                 var result = _transactionExecutor.Execute(db => { var v = Validate(request, db); if (!v.IsValid) return Fail(v.ErrorMessage); var c = Process(v); return Commit(c, db); }, r => r != null && r.Success);
                 if (result == null) return Fail("فشل حفظ فاتورة الشراء. حاول مرة أخرى.");
                 if (result.Success) _auditService.Log("CREATE_PURCHASE", "Purchase", 0, request.UserId);
@@ -51,6 +57,17 @@ namespace SupermarketPOS.Business
         }
 
         private PurchaseValidationResult Validate(PurchaseRequest request, AppDbContext db) { return PurchaseValidationResult.Valid(request, request.Items?.Where(i => i != null && i.ProductId > 0).ToList() ?? new List<PurchaseRequestItem>(), CalculateTotals(request.Items?.Where(i => i != null && i.ProductId > 0).ToList() ?? new List<PurchaseRequestItem>())); }
+
+        private string ValidatePricing(PurchaseRequest request)
+        {
+            var items = (request.Items ?? new List<PurchaseRequestItem>())
+                .Where(i => i != null && i.ProductId > 0)
+                .Select(i => new PriceIntegrity.Line(i.Quantity, i.UnitPrice, i.Discount));
+            var maxLine = _settingsService.GetDecimal("price.max_line_discount_pct", 100m);
+            var maxDoc = _settingsService.GetDecimal("price.max_document_discount_pct", 100m);
+            var limits = new PriceIntegrity.Limits(maxLine, maxDoc);
+            return PriceIntegrity.Validate(items, 0m, limits);
+        }
         private PurchaseCommand Process(PurchaseValidationResult v) { return new PurchaseCommand { Request = v.Request, Items = v.Items, Totals = v.Totals, StockCommands = v.Items.GroupBy(i => i.ProductId).Select(g => new PurchaseStockCommand { ProductId = g.Key, Quantity = g.Sum(x => x.Quantity), UnitPrice = g.OrderByDescending(x => x.Quantity).First().UnitPrice }).ToList() }; }
 
         private PurchaseResult Commit(PurchaseCommand command, AppDbContext db)
@@ -120,6 +137,13 @@ namespace SupermarketPOS.Business
                     Credit = remainingAmount
                 });
             }
+
+            JournalBalance.EnsureBalanced(new[]
+            {
+                new JournalBalance.Line(netAmount, 0m),
+                new JournalBalance.Line(0m, paidAmount),
+                new JournalBalance.Line(0m, remainingAmount)
+            });
         }
 
         private static Account GetOrCreateAccount(AppDbContext db, string code, string name, string accountType)

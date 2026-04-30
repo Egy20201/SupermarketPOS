@@ -1,5 +1,6 @@
 using SupermarketPOS.Core.Entities;
 using SupermarketPOS.Data;
+using SupermarketPOS.Business.Posting;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -22,8 +23,9 @@ namespace SupermarketPOS.Business
         private readonly AuditService _auditService;
         private readonly RuleExecutor _ruleExecutor;
         private readonly TransactionExecutor _transactionExecutor;
+        private readonly IFiscalPeriodLockChecker _periodLock;
 
-        public SalesService(Func<AppDbContext> dbFactory, ConfigurationService configurationService, IInventoryMovementService inventoryService, FeatureFlagService featureFlagService, AuthorizationService authzService, SettingsService settingsService, AuditService auditService, TransactionExecutor transactionExecutor)
+        public SalesService(Func<AppDbContext> dbFactory, ConfigurationService configurationService, IInventoryMovementService inventoryService, FeatureFlagService featureFlagService, AuthorizationService authzService, SettingsService settingsService, AuditService auditService, TransactionExecutor transactionExecutor, IFiscalPeriodLockChecker periodLock = null)
         {
             _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
@@ -34,6 +36,7 @@ namespace SupermarketPOS.Business
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
             _ruleExecutor = new RuleExecutor(new[] { new ValidateSaleRule() });
             _transactionExecutor = transactionExecutor ?? throw new ArgumentNullException(nameof(transactionExecutor));
+            _periodLock = periodLock;
         }
 
         public int GetDefaultWarehouseId() { using (var db = _dbFactory()) { var w = db.Warehouses.FirstOrDefault(x => x.IsDefault) ?? db.Warehouses.FirstOrDefault(); return w?.Id ?? 1; } }
@@ -95,6 +98,9 @@ namespace SupermarketPOS.Business
             if (!_featureFlagService.IsEnabled("sales")) return Fail("تم تعطيل المبيعات");
             try
             {
+                if (_periodLock != null && _periodLock.IsLocked(request.Date)) return Fail("لا يمكن الترحيل إلى فترة محاسبية مُقفلة");
+                var priceError = ValidatePricing(request);
+                if (priceError != null) return Fail(priceError);
                 var saleResult = _transactionExecutor.Execute(db => { var validation = Validate(request, db); if (!validation.IsValid) return Fail(validation.ErrorMessage); var command = Process(validation); return Commit(command, db); }, r => r != null && r.Success);
                 if (saleResult == null) return Fail("فشل حفظ الفاتورة. حاول مرة أخرى.");
                 if (!saleResult.Success) return saleResult;
@@ -105,6 +111,18 @@ namespace SupermarketPOS.Business
         }
 
         private SaleValidationResult Validate(SaleRequest request, AppDbContext db) { /* unchanged */ return SaleValidationResult.Valid(request, request.Items?.Where(i => i != null && i.ProductId > 0).ToList() ?? new List<SaleRequestItem>(), CalculateTotals(request.Items?.Where(i => i != null && i.ProductId > 0).ToList() ?? new List<SaleRequestItem>(), request.ApplyDiscount, request.DiscountPercent, request.ApplyTax)); }
+
+        private string ValidatePricing(SaleRequest request)
+        {
+            var items = (request.Items ?? new List<SaleRequestItem>())
+                .Where(i => i != null && i.ProductId > 0)
+                .Select(i => new PriceIntegrity.Line(i.Quantity, i.UnitPrice, 0m));
+            var maxLine = _settingsService.GetDecimal("price.max_line_discount_pct", 100m);
+            var maxDoc = _settingsService.GetDecimal("price.max_document_discount_pct", 100m);
+            var limits = new PriceIntegrity.Limits(maxLine, maxDoc);
+            var pct = request.ApplyDiscount ? request.DiscountPercent : 0m;
+            return PriceIntegrity.Validate(items, pct, limits);
+        }
         private SaleCommand Process(SaleValidationResult validation) => new SaleCommand { Request = validation.Request, Items = validation.Items, Totals = validation.Totals };
 
         private SaleResult Commit(SaleCommand command, AppDbContext db)
@@ -112,8 +130,9 @@ namespace SupermarketPOS.Business
             var branchId = command.Request.BranchId;
             var invoice = new SaleInvoice { InvoiceNumber = command.Request.InvoiceNumber, Date = command.Request.Date, UserId = command.Request.UserId, CustomerId = command.Request.CustomerId, Discount = command.Totals.DiscountAmount, TotalAmount = command.Totals.Subtotal, NetAmount = command.Totals.NetAmount, BranchId = branchId };
             db.SaleInvoices.Add(invoice);
-            foreach (var item in command.Items) { var baseQty = (int)Math.Ceiling(item.Quantity * item.ConversionFactor); db.SaleItems.Add(new SaleItem { SaleInvoice = invoice, ProductId = item.ProductId, Quantity = item.Quantity, UnitPrice = item.UnitPrice, TotalPrice = item.Quantity * item.UnitPrice, ProductUnitId = item.ProductUnitId, UnitName = item.UnitName, ConversionFactor = item.ConversionFactor, BaseQuantity = baseQty }); string err; if (!_inventoryService.DecreaseStockAndRecordMovement(db, item.ProductId, command.Request.WarehouseId, baseQty, item.UnitPrice, invoice.InvoiceNumber, "بيع", out err)) throw new InvalidOperationException(err); }
+            foreach (var item in command.Items) { var baseQty = UnitConversion.ToBaseQuantity(item.Quantity, item.ConversionFactor); db.SaleItems.Add(new SaleItem { SaleInvoice = invoice, ProductId = item.ProductId, Quantity = item.Quantity, UnitPrice = item.UnitPrice, TotalPrice = item.Quantity * item.UnitPrice, ProductUnitId = item.ProductUnitId, UnitName = item.UnitName, ConversionFactor = item.ConversionFactor, BaseQuantity = baseQty }); string err; if (!_inventoryService.DecreaseStockAndRecordMovement(db, item.ProductId, command.Request.WarehouseId, baseQty, item.UnitPrice, invoice.InvoiceNumber, "بيع", out err)) throw new InvalidOperationException(err); }
             AddSalesJournalEntry(db, command.Request, command.Totals.NetAmount, invoice.InvoiceNumber);
+            invoice.Status = "Posted";
             db.SaveChanges();
             return new SaleResult { Success = true, SaleId = invoice.Id, Subtotal = command.Totals.Subtotal, DiscountAmount = command.Totals.DiscountAmount, TaxAmount = command.Totals.TaxAmount, NetAmount = command.Totals.NetAmount };
         }
@@ -153,6 +172,12 @@ namespace SupermarketPOS.Business
                 Description = "Sales revenue",
                 Debit = 0m,
                 Credit = netAmount
+            });
+
+            JournalBalance.EnsureBalanced(new[]
+            {
+                new JournalBalance.Line(netAmount, 0m),
+                new JournalBalance.Line(0m, netAmount)
             });
         }
 
