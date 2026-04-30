@@ -29,6 +29,12 @@ namespace SupermarketPOS.Business
             services.AddSingleton<Func<AppDbContext>>(_ => AppDbContextFactory.Create);
             services.AddSingleton<TransactionExecutor>();
 
+            // Workflow + metrics façades — kept as singletons so consumers
+            // can either call the static helpers (back-compat) or inject the
+            // class (preferred for new code).
+            services.AddSingleton<WorkflowEngine>();
+            services.AddSingleton<MetricsService>();
+
             // Phase 5: accounting period lock checker — guards every posting flow
             // against writes into closed fiscal periods.
             services.AddSingleton<IFiscalPeriodLockChecker, FiscalPeriodLockChecker>();
